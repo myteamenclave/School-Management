@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/SchoolMgmt.Infrastructure.Tests/SchoolMgmt.Infrastructure.Tests.csproj" />
+    <Project Path="tests/SchoolMgmt.IntegrationTests/SchoolMgmt.IntegrationTests.csproj" />
+  </Folder>
+  <Project Path="SchoolMgmt.Application/SchoolMgmt.Application.csproj" Id="e74c6d1f-651f-498a-af59-35a002100b22" />
+  <Project Path="SchoolMgmt.Domain/SchoolMgmt.Domain.csproj" />
+  <Project Path="SchoolMgmt.Infrastructure/SchoolMgmt.Infrastructure.csproj" Id="e7520218-ed9b-4e0b-b0de-ba94b4838b8a" />
+  <Project Path="SchoolMgmt.WebApi/SchoolMgmt.WebApi.csproj" Id="6b6e7e9f-c356-4fce-aa89-5bfae38507dd" />
+</Solution>
