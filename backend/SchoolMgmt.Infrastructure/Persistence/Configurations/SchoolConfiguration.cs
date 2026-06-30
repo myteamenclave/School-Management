@@ -12,7 +12,7 @@ public class SchoolConfiguration : IEntityTypeConfiguration<School>
         builder.Property(s => s.Name).IsRequired().HasMaxLength(200);
 
         // Seed values must be static — defaults match SeedDataOptions so the
-        // migration-time seed and the runtime StaticTenantProvider agree.
+        // migration-time seed agrees with the demo school id used at runtime.
         // Anonymous object (not a School instance) so CreatedAt — private-set
         // on BaseEntity — can still be given a concrete seed value via EF's
         // property-bag mapping, without widening BaseEntity's encapsulation.
