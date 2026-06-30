@@ -8,7 +8,7 @@ Status legend: `[ ]` not started · `[~]` in progress / has an idea doc · `[x]`
 
 ## Platform / Cross-Cutting
 - [x] Multi-tenant-ready data model (`SchoolId` on every entity, EF Core global query filters) — architecture only, no tenant-onboarding UI
-- [x] Auth & RBAC (Admin, Teacher, Principal/Owner, Parent roles)
+- [x] Auth & RBAC (Admin, Teacher, Parent roles — Principal merged into Admin)
 - [ ] Academic year / term configuration
 - [ ] Class / section structure
 - [~] Docker + CI/CD (GitHub Actions) — Docker (backend Dockerfile + layered docker-compose) done; CI/CD pipeline not yet started
@@ -21,6 +21,7 @@ Status legend: `[ ]` not started · `[~]` in progress / has an idea doc · `[x]`
 - [ ] Fee structure templates (installments, discounts, scholarships)
 - [ ] Fee invoicing
 - [ ] Financial audit trail (who changed/collected what, when)
+- [ ] Overview dashboard (revenue vs. outstanding fees, enrollment trend, attendance trend, staff overview)
 
 ## Parent Portal
 - [ ] Parent login linked to child/children
@@ -32,12 +33,6 @@ Status legend: `[ ]` not started · `[~]` in progress / has an idea doc · `[x]`
 ## Teacher
 - [ ] Mark daily attendance
 - [ ] Enter grades per subject/term (lightweight — no weighted GPA logic)
-
-## Principal / Owner Dashboard
-- [ ] Revenue vs. outstanding fees
-- [ ] Enrollment trend
-- [ ] Attendance trend
-- [ ] Staff overview
 
 ## Explicitly Out of Scope (see "Not Doing" in the source idea doc)
 - Library, transport, hostel, payroll modules

@@ -1,6 +1,6 @@
 # School Management System
 
-A school management system covering student records, staff management, and fee collection, plus a parent portal with online payments, a principal/owner dashboard, and teacher attendance and gradebook tools. The data model is architected for multi-tenancy from day one.
+A school management system covering student records, staff management, fee collection, and an admin overview dashboard, plus a parent portal with online payments and teacher attendance and gradebook tools. The data model is architected for multi-tenancy from day one.
 
 See [docs/ideas/school-management-system.md](docs/ideas/school-management-system.md) for the full problem statement and scope rationale.
 
@@ -17,7 +17,7 @@ Frontend has not been started yet.
 
 - **Backend:** .NET 8.0, Clean Architecture (Domain / Application / Infrastructure / WebApi), Entity Framework Core, PostgreSQL
 - **Frontend (planned):** React 19, TypeScript, Vite, shadcn/ui + Tailwind CSS, TanStack Query
-- **Auth (planned):** JWT in httpOnly cookies, refresh-token rotation with theft detection
+- **Auth:** JWT in httpOnly cookies, refresh-token rotation with theft detection (implemented)
 - **Deployment:** Docker, GitHub Actions CI/CD
 
 Full architectural detail lives in [.claude/context/architecture.md](.claude/context/architecture.md).

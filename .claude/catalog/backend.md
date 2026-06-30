@@ -10,7 +10,7 @@
 | `ITenantScoped` | `Common/ITenantScoped.cs` | Marker interface (`SchoolId`) — implement on any entity that belongs to a school. Separate from `BaseEntity` since not every entity is tenant-scoped |
 | `School` | `Entities/School.cs` | The tenant entity itself — `BaseEntity` but NOT `ITenantScoped` (a school doesn't belong to itself) |
 | `User` | `Entities/User.cs` | `BaseEntity` + `ITenantScoped`. Email (unique per school), password hash, display name, `Role` |
-| `UserRole` (enum) | `Entities/UserRole.cs` | `Admin`, `Teacher`, `Principal` (canonical name for "Principal/Owner"), `Parent` |
+| `UserRole` (enum) | `Entities/UserRole.cs` | `Admin`, `Teacher`, `Parent` — Principal/Owner merged into Admin |
 | `RefreshToken` | `Entities/RefreshToken.cs` | `BaseEntity` + `ITenantScoped`. Hashed token, `SessionId` (groups tokens from one login for family revocation), `ExpiresAt`/`RevokedAt`/`ReplacedByTokenId`, `User` navigation (eager-loaded by `GetByTokenHashAsync`) |
 
 ## Application (`SchoolMgmt.Application`)
