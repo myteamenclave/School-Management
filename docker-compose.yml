@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - schoolmgmt
+
+  # One-shot — applies pending EF Core migrations then exits. Never restarts.
+  # See .claude/context/architecture.md § Database migrations.
+  migrator:
+    image: schoolmgmt-migrator:latest
+    environment:
+      SCHOOLMGMT_CONNECTION_STRING: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - schoolmgmt
+
+  api:
+    image: schoolmgmt-api:latest
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Jwt__Secret: ${JWT_SECRET}
+      Jwt__Issuer: ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+      Jwt__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES}
+      Jwt__RefreshTokenDays: ${JWT_REFRESH_TOKEN_DAYS}
+    # api should only start once the migrator has successfully run and exited
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    networks:
+      - schoolmgmt
+
+  # Not yet functional — no frontend/Dockerfile exists. Gated behind a profile
+  # so it doesn't break `docker compose up` for everyone else in the meantime.
+  # Activate once frontend exists: `docker compose --profile frontend up`.
+  frontend:
+    image: schoolmgmt-frontend:latest
+    profiles: ["frontend"]
+    depends_on:
+      - api
+    networks:
+      - schoolmgmt
+
+  nginx:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    networks:
+      - schoolmgmt
+
+networks:
+  schoolmgmt:
+
+volumes:
+  postgres_data:

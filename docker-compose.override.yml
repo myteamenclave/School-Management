@@ -1,0 +1,42 @@
+# Auto-loaded by `docker compose up` alongside docker-compose.yml (no -f flags
+# needed). Dev-only: builds images locally instead of pulling pre-built ones,
+# and publishes ports to the host. Never loaded for prod runs, since those
+# invoke `docker compose -f docker-compose.yml -f docker-compose.prod.yml ...`
+# with explicit -f flags, which disables the implicit override.yml merge.
+
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_PORT}:5432"
+
+  migrator:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: migrator
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "${API_PORT}:8080"
+
+  # Port mapping is a placeholder — adjust once frontend/Dockerfile exists and
+  # its actual served port is known.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+
+  # Mapped to a non-standard host port — Windows reserves port 80 at the OS
+  # level (HTTP.SYS) on many dev machines. Real :80/:443 mapping lives in
+  # docker-compose.prod.yml, for the actual (Linux) deployment target.
+  nginx:
+    ports:
+      - "${NGINX_PORT:-8081}:80"

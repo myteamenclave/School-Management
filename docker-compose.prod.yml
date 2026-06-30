@@ -1,0 +1,21 @@
+# Prod-only overlay. Run with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
+# Explicit -f flags mean docker-compose.override.yml is NOT auto-merged here.
+# api/postgres/frontend stay internal-only (no published ports) — nginx is the
+# only public ingress.
+
+services:
+  postgres:
+    restart: unless-stopped
+
+  api:
+    restart: unless-stopped
+
+  frontend:
+    restart: unless-stopped
+
+  nginx:
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
