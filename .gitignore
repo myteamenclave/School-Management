@@ -41,5 +41,5 @@ desktop.ini
 **/coverage/
 
 # === Docs / Specs ===
-docs/
-specs
+# docs/ and specs/ are intentionally tracked — they are the project's decision
+# record and implementation specs, committed alongside the code they describe.

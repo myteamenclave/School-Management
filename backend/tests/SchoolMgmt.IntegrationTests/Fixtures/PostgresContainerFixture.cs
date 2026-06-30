@@ -1,4 +1,7 @@
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
 using SchoolMgmt.IntegrationTests.Fakes;
 using SchoolMgmt.IntegrationTests.TestSupport;
@@ -70,4 +73,30 @@ public class PostgresContainerFixture : IAsyncLifetime
             new FakeTenantProvider(tenantId),
             new FakeDateTimeProvider(now ?? DateTimeOffset.UtcNow));
     }
+
+    // Shared host factory for auth/HTTP-level integration tests — overrides
+    // the connection string (points at this fixture's container) and the JWT
+    // config (a fixed test secret, independent of appsettings.Development.json,
+    // since WebApplicationFactory doesn't reliably load Development config).
+    public WebApplicationFactory<Program> CreateFactory() =>
+        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            // WebApplicationFactory defaults to "Production" if the ambient
+            // ASPNETCORE_ENVIRONMENT isn't set — without this, DemoDataSeeder's
+            // IsDevelopment() gate would skip seeding and every test that logs
+            // in as the demo Admin would fail.
+            builder.UseEnvironment("Development");
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["ConnectionStrings:Default"] = ConnectionString,
+                    ["Jwt:Secret"] = "integration-test-secret-at-least-32-bytes-long!!",
+                    ["Jwt:Issuer"] = "SchoolMgmt.IntegrationTests",
+                    ["Jwt:Audience"] = "SchoolMgmt.IntegrationTests",
+                    ["Jwt:AccessTokenMinutes"] = "15",
+                    ["Jwt:RefreshTokenDays"] = "7",
+                });
+            });
+        });
 }

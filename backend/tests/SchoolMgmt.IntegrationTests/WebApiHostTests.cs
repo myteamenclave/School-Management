@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SchoolMgmt.Application.Interfaces;
 using SchoolMgmt.IntegrationTests.Fixtures;
@@ -13,26 +11,19 @@ public class WebApiHostTests(PostgresContainerFixture fixture)
     [Fact]
     public async Task CompositionRoot_ResolvesAppDbContextAndTenantProvider_AgainstARealHost()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureAppConfiguration((_, config) =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:Default"] = fixture.ConnectionString
-                });
-            });
-        });
+        await using var factory = fixture.CreateFactory();
 
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
 
-        // StaticTenantProvider's CurrentSchoolId is the same well-known id seeded by the migration.
-        var school = await dbContext.Schools.FindAsync(tenantProvider.CurrentSchoolId);
-
+        // HttpContextTenantProvider.CurrentSchoolId is only resolvable on an
+        // authenticated HTTP request (by design — see specs/02-implement-auth.md).
+        // That path is covered by TenantResolutionTests. Here we only confirm DI
+        // construction succeeds and the seeded data is reachable.
         Assert.NotNull(dbContext);
-        Assert.NotEqual(Guid.Empty, tenantProvider.CurrentSchoolId);
+        Assert.NotNull(tenantProvider);
+        var school = await dbContext.Schools.FindAsync(Guid.Parse("00000000-0000-0000-0000-000000000001"));
         Assert.NotNull(school);
     }
 }

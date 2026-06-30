@@ -30,6 +30,7 @@ Concrete technical plans for *how* a feature is actually implemented. **Every fe
 | File | Purpose | Status |
 |---|---|---|
 | [specs/01-implement-multi-tenant-data-model.md](specs/01-implement-multi-tenant-data-model.md) | Base entity conventions, EF Core global query filters, `ITenantProvider` abstraction, seed school | Implemented |
+| [specs/02-implement-auth.md](specs/02-implement-auth.md) | JWT-in-cookie auth, refresh rotation + theft detection, RBAC, real claims-based `ITenantProvider` | Implemented |
 
 ### Coding Rules — `.claude/rules/`
 Enforceable coding rules an agent must follow while writing code, not background context.

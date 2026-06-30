@@ -16,6 +16,8 @@ public class AppDbContext(
     private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider;
 
     public DbSet<School> Schools => Set<School>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     private static readonly MethodInfo SetTenantFilterMethod =
         typeof(AppDbContext).GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!;

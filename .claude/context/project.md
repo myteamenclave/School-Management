@@ -16,22 +16,26 @@ A school management system built as a capability demo: the client gave a one-sen
 
 **Principal/Owner Dashboard** *(planned)* — Revenue vs. outstanding fees, enrollment trend, attendance trend, staff overview. Built last — depends on other modules having real seeded data.
 
-**Multi-tenant-ready data model** *(planned)* — Every entity scoped by `SchoolId` with EF Core global query filters. Architecture only — no tenant-onboarding UI, branding, or super-admin console in v1.
+**Multi-tenant-ready data model** *(implemented)* — Every entity scoped by `SchoolId` with EF Core global query filters. Architecture only — no tenant-onboarding UI, branding, or super-admin console in v1.
+
+**Auth & RBAC** *(implemented)* — JWT-in-httpOnly-cookie login/refresh/logout, refresh-token rotation with theft detection (reusing an already-rotated token revokes the whole session), role claims for `[Authorize(Roles = "...")]`. See [specs/02-implement-auth.md](../../specs/02-implement-auth.md).
 
 ## Core Business Rules
 
 **Roles**
 - `Admin` — full CRUD across students, staff, fees; manages academic year/term/class structure
 - `Teacher` — marks attendance and enters grades for assigned classes/subjects only
-- `Principal/Owner` — read-mostly dashboard access (revenue, enrollment, attendance, staff overview)
+- `Principal` — canonical role name for "Principal/Owner" (one role string, not two); read-mostly dashboard access (revenue, enrollment, attendance, staff overview)
 - `Parent` — read access to their own child(ren)'s data only; can pay fees online
 
 **Tenancy**
 - Every entity is scoped to a `SchoolId`. One school is seeded for the demo, but query-level isolation is enforced from day one so the data model doesn't need an invasive migration later.
+- `ITenantProvider.CurrentSchoolId` resolves from the authenticated user's JWT claims (`HttpContextTenantProvider`) and throws if accessed outside an authenticated request — login/refresh lookups (`IUserRepository.GetByEmailAsync`, `IRefreshTokenRepository.GetByTokenHashAsync`) are the deliberate, documented exception that bypass the tenant filter, since they run before a tenant is resolvable.
 
 **Auth**
 - GET endpoints must never have side effects (required by the `SameSite=Lax` cookie policy — see [.claude/rules/backend.md](../rules/backend.md)).
 - No mediator library — Application-layer services are called directly via DI from controllers (see [.claude/rules/backend.md](../rules/backend.md)).
+- **Demo login:** `admin@demoschool.test` / `Passw0rd!` — Admin role, tied to the seeded demo school. Only ever seeded in `Development` (`DemoDataSeeder`, gated by `IsDevelopment()`) — deliberately absent from any `Production`-environment deployment, including a real prod run of `docker-compose.yml`. See [specs/02-implement-auth.md](../../specs/02-implement-auth.md).
 
 ## Integrations
 
