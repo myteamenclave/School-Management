@@ -1,4 +1,4 @@
-<!-- Last verified: 2026-06-30. Update this line whenever the architecture changes. -->
+<!-- Last verified: 2026-07-01. Update this line whenever the architecture changes. -->
 
 # Architecture
 
@@ -28,7 +28,7 @@
 |---|---|---|---|
 | Unit (backend) | xUnit | Domain entities/business rules, Application-layer services | No mocking library — dependencies are faked with hand-written stub implementations of the same interfaces, not Moq/NSubstitute. Plain `Assert.*`, no FluentAssertions. |
 | Integration (backend) | xUnit + `WebApplicationFactory` | API endpoints against a real Postgres instance | Real Postgres via Testcontainers (spun up per test run), not EF Core's InMemory provider — InMemory doesn't enforce constraints or real SQL translation and hides real bugs. Docker is already in the stack, so no new infra dependency. |
-| Unit (frontend) | Jest + React Testing Library | Components, hooks, utils | jsdom environment; RTL favors testing user-facing behavior over implementation detail |
+| Unit (frontend) | Vitest + React Testing Library | Components, hooks, utils | jsdom environment; RTL favors testing user-facing behavior over implementation detail. Vitest chosen over Jest — runs in the same Vite pipeline, shares `vite.config.ts`, and has a Jest-compatible API; Jest's Node-based transformer is awkward with ESM packages (shadcn/ui, TanStack Query) that skip CommonJS builds |
 | E2E | Playwright | Full user flows across personas (admin/teacher/parent/principal) | Mandated regardless of other choices |
 
 ## Folder Structure
