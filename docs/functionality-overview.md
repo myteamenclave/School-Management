@@ -6,33 +6,74 @@ Source direction: [school-management-system.md](ideas/school-management-system.m
 
 Status legend: `[ ]` not started · `[~]` in progress / has an idea doc · `[x]` done
 
+Each feature is split into backend (API) and frontend (UI) since they progress independently.
+
 ## Platform / Cross-Cutting
-- [x] Multi-tenant-ready data model (`SchoolId` on every entity, EF Core global query filters) — architecture only, no tenant-onboarding UI
-- [x] Auth & RBAC (Admin, Teacher, Parent roles — Principal merged into Admin)
-- [x] Academic year / term configuration — [idea doc](ideas/01-academic-year-term-configuration.md)
-- [x] Class / section structure — [idea doc](ideas/02-class-section-structure.md)
-- [~] Docker + CI/CD (GitHub Actions) — Docker (backend Dockerfile + layered docker-compose) done; CI/CD pipeline not yet started
+- Multi-tenant-ready data model (`SchoolId` on every entity, EF Core global query filters) — architecture only, no tenant-onboarding UI
+  - [x] Backend
+- Auth & RBAC (Admin, Teacher, Parent roles — Principal merged into Admin)
+  - [x] Backend
+  - [ ] Frontend (login page, token refresh, route guards)
+- Academic year / term configuration — [idea doc](ideas/01-academic-year-term-configuration.md)
+  - [x] Backend
+  - [ ] Frontend
+- Class / section structure — [idea doc](ideas/02-class-section-structure.md)
+  - [x] Backend
+  - [ ] Frontend
+- Docker + CI/CD
+  - [x] Docker (backend Dockerfile + layered docker-compose)
+  - [ ] CI/CD pipeline (GitHub Actions)
 
 ## Admin / Registrar
-- [~] Student CRUD — [idea doc](ideas/03-student-crud.md)
-- [ ] Bulk student/staff import (CSV)
-- [ ] Staff CRUD
-- [ ] Class/section assignment (students to classes, staff to subjects/classes)
-- [ ] Fee structure templates (installments, discounts, scholarships)
-- [ ] Fee invoicing
-- [ ] Financial audit trail (who changed/collected what, when)
-- [ ] Overview dashboard (revenue vs. outstanding fees, enrollment trend, attendance trend, staff overview)
+- Student CRUD — [idea doc](ideas/03-student-crud.md)
+  - [x] Backend
+  - [ ] Frontend
+- Bulk student/staff import (CSV)
+  - [ ] Backend
+  - [ ] Frontend
+- Staff CRUD
+  - [ ] Backend
+  - [ ] Frontend
+- Class/section assignment (students to classes, staff to subjects/classes)
+  - [ ] Backend
+  - [ ] Frontend
+- Fee structure templates (installments, discounts, scholarships)
+  - [ ] Backend
+  - [ ] Frontend
+- Fee invoicing
+  - [ ] Backend
+  - [ ] Frontend
+- Financial audit trail (who changed/collected what, when)
+  - [ ] Backend
+  - [ ] Frontend
+- Overview dashboard (revenue vs. outstanding fees, enrollment trend, attendance trend, staff overview)
+  - [ ] Backend
+  - [ ] Frontend
 
 ## Parent Portal
-- [ ] Parent login linked to child/children
-- [ ] View child's grades
-- [ ] View child's attendance
-- [ ] View fee balance / invoices
-- [ ] Pay fees online (sandbox payment gateway — Stripe test mode by default)
+- Parent login linked to child/children
+  - [ ] Backend
+  - [ ] Frontend
+- View child's grades
+  - [ ] Backend
+  - [ ] Frontend
+- View child's attendance
+  - [ ] Backend
+  - [ ] Frontend
+- View fee balance / invoices
+  - [ ] Backend
+  - [ ] Frontend
+- Pay fees online (sandbox payment gateway — Stripe test mode by default)
+  - [ ] Backend
+  - [ ] Frontend
 
 ## Teacher
-- [ ] Mark daily attendance
-- [ ] Enter grades per subject/term (lightweight — no weighted GPA logic)
+- Mark daily attendance
+  - [ ] Backend
+  - [ ] Frontend
+- Enter grades per subject/term (lightweight — no weighted GPA logic)
+  - [ ] Backend
+  - [ ] Frontend
 
 ## Explicitly Out of Scope (see "Not Doing" in the source idea doc)
 - Library, transport, hostel, payroll modules
@@ -43,4 +84,4 @@ Status legend: `[ ]` not started · `[~]` in progress / has an idea doc · `[x]`
 
 ## Open / To Confirm Before Build
 - [ ] Payment gateway final pick (defaulting to Stripe test mode; confirm before that module starts)
-- [ ] Principal dashboard data freshness (live query vs. periodic snapshot) — decide once other modules have real data
+- [ ] Admin dashboard data freshness (live query vs. periodic snapshot) — decide once other modules have real data
