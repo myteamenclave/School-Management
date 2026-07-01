@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Brand colors */
+  --color-primary:          #1E3A5F;
+  --color-secondary:        #2563EB;
+  --color-accent:           #059669;
+
+  /* Surfaces */
+  --color-background:       #F8FAFC;
+  --color-foreground:       #0F172A;
+  --color-card:             #FFFFFF;
+  --color-card-foreground:  #0F172A;
+  --color-muted:            #F1F3F5;
+  --color-muted-foreground: #64748B;
+
+  /* Chrome */
+  --color-border:           #E4E7EB;
+  --color-ring:             #1E3A5F;
+
+  /* Semantic */
+  --color-destructive:      #DC2626;
+
+  /* Typography */
+  --font-heading: 'Lexend', sans-serif;
+  --font-body:    'Source Sans 3', sans-serif;
+}
+
+body {
+  font-family: var(--font-body, 'Source Sans 3', sans-serif);
+  background-color: #F8FAFC;
+  color: #0F172A;
+  -webkit-font-smoothing: antialiased;
+}
