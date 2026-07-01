@@ -8,4 +8,5 @@ public class FakeUnitOfWork : IUnitOfWork
     public Task BeginTransactionAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task CommitAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RollbackAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public void Detach<T>(T entity) where T : class { }
 }

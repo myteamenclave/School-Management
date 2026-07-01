@@ -23,6 +23,7 @@ public class AppDbContext(
     public DbSet<Semester> Semesters => Set<Semester>();
     public DbSet<Grade> Grades => Set<Grade>();
     public DbSet<Section> Sections => Set<Section>();
+    public DbSet<Student> Students => Set<Student>();
 
     private static readonly MethodInfo SetTenantFilterMethod =
         typeof(AppDbContext).GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!;

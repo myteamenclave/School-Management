@@ -9,6 +9,7 @@ using SchoolMgmt.Infrastructure.MultiTenancy;
 using SchoolMgmt.Infrastructure.Persistence;
 using SchoolMgmt.Application.AcademicYears;
 using SchoolMgmt.Application.Grades;
+using SchoolMgmt.Application.Students;
 using SchoolMgmt.Infrastructure.Persistence.Repositories;
 
 namespace SchoolMgmt.Infrastructure;
@@ -22,6 +23,7 @@ public static class DependencyInjection
 
         services.Configure<SeedDataOptions>(configuration.GetSection(SeedDataOptions.SectionName));
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<StudentOptions>(configuration.GetSection(StudentOptions.SectionName));
 
         services.AddHttpContextAccessor();
         services.AddScoped<ITenantProvider, HttpContextTenantProvider>(); // replaces StaticTenantProvider (specs/01) — see specs/02-implement-auth.md
@@ -33,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAcademicYearRepository, AcademicYearRepository>();
         services.AddScoped<IGradeRepository, GradeRepository>();
+        services.AddScoped<IStudentRepository, StudentRepository>();
 
         services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();

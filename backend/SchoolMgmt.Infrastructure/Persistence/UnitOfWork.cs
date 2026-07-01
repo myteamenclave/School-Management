@@ -40,4 +40,7 @@ internal sealed class UnitOfWork(AppDbContext context) : IUnitOfWork
         await _transaction.DisposeAsync();
         _transaction = null;
     }
+
+    public void Detach<T>(T entity) where T : class =>
+        context.Entry(entity).State = EntityState.Detached;
 }
