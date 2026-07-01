@@ -9,7 +9,7 @@ Status legend: `[ ]` not started · `[~]` in progress / has an idea doc · `[x]`
 ## Platform / Cross-Cutting
 - [x] Multi-tenant-ready data model (`SchoolId` on every entity, EF Core global query filters) — architecture only, no tenant-onboarding UI
 - [x] Auth & RBAC (Admin, Teacher, Parent roles — Principal merged into Admin)
-- [ ] Academic year / term configuration
+- [~] Academic year / term configuration — [idea doc](ideas/01-academic-year-term-configuration.md)
 - [ ] Class / section structure
 - [~] Docker + CI/CD (GitHub Actions) — Docker (backend Dockerfile + layered docker-compose) done; CI/CD pipeline not yet started
 

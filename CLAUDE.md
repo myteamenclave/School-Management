@@ -19,6 +19,7 @@ Canonical record of *why* the project is shaped the way it is. Read these to und
 | File | Purpose |
 |---|---|
 | [docs/ideas/school-management-system.md](docs/ideas/school-management-system.md) | Source idea doc — problem statement, recommended direction, key assumptions, MVP scope, what's deliberately not being built |
+| [docs/ideas/01-academic-year-term-configuration.md](docs/ideas/01-academic-year-term-configuration.md) | Academic year / term configuration — two-level calendar structure, semester auto-scaffold, domain guard enforcement |
 | [docs/functionality-overview.md](docs/functionality-overview.md) | Master goal list / checklist of every functionality across all modules — the index of what's left to build |
 | [docs/design-system.md](docs/design-system.md) | Color palette, typography, design vibe — source of truth before syncing to Claude Design |
 
@@ -31,6 +32,7 @@ Concrete technical plans for *how* a feature is actually implemented. **Every fe
 |---|---|---|
 | [specs/01-implement-multi-tenant-data-model.md](specs/01-implement-multi-tenant-data-model.md) | Base entity conventions, EF Core global query filters, `ITenantProvider` abstraction, seed school | Implemented |
 | [specs/02-implement-auth.md](specs/02-implement-auth.md) | JWT-in-cookie auth, refresh rotation + theft detection, RBAC, real claims-based `ITenantProvider` | Implemented |
+| [specs/03-implement-academic-year-term-configuration.md](specs/03-implement-academic-year-term-configuration.md) | Academic year + semester entities, domain guard (`EnsureNotArchived`), Admin CRUD API | Ready to implement |
 
 ### Coding Rules — `.claude/rules/`
 Enforceable coding rules an agent must follow while writing code, not background context.
