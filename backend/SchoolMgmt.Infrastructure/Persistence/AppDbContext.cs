@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SchoolMgmt.Application.Interfaces;
 using SchoolMgmt.Domain.Common;
 using SchoolMgmt.Domain.Entities;
+using SchoolMgmt.Domain.Enums;
 
 namespace SchoolMgmt.Infrastructure.Persistence;
 
@@ -18,6 +19,8 @@ public class AppDbContext(
     public DbSet<School> Schools => Set<School>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<AcademicYear> AcademicYears => Set<AcademicYear>();
+    public DbSet<Semester> Semesters => Set<Semester>();
 
     private static readonly MethodInfo SetTenantFilterMethod =
         typeof(AppDbContext).GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!;

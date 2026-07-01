@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/tests/">
+    <Project Path="tests/SchoolMgmt.Domain.Tests/SchoolMgmt.Domain.Tests.csproj" />
     <Project Path="tests/SchoolMgmt.Infrastructure.Tests/SchoolMgmt.Infrastructure.Tests.csproj" />
     <Project Path="tests/SchoolMgmt.IntegrationTests/SchoolMgmt.IntegrationTests.csproj" />
   </Folder>

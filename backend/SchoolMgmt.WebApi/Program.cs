@@ -6,6 +6,7 @@ using SchoolMgmt.Application;
 using SchoolMgmt.Application.Auth;
 using SchoolMgmt.Infrastructure;
 using SchoolMgmt.Infrastructure.Persistence;
+using SchoolMgmt.WebApi.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,7 +60,11 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
     
 builder.Services.AddAuthorization();
 
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<DomainExceptionFilter>();
+    options.Filters.Add<ValidationFilter>();
+})
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
