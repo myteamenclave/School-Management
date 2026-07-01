@@ -18,6 +18,8 @@
 | `AcademicYear` | `Entities/AcademicYear.cs` | `BaseEntity` + `ITenantScoped`. Two-level calendar root. `Create(name, startDate, endDate)` factory always produces 2 auto-scaffolded semesters. `Archive()` enforces the "cannot archive the current year" rule. `EnsureNotArchived()` is the domain guard downstream services call before any write. `SetCurrent(bool)` is the only way to set `IsCurrent`. |
 | `Semester` | `Entities/Semester.cs` | `BaseEntity` + `ITenantScoped`. Owned by `AcademicYear`. `SetCurrent(bool)` is the only way to set `IsCurrent`. Always accessed through `AcademicYear` — no standalone repository. |
 | `AcademicYearStatus` (enum) | `Enums/AcademicYearStatus.cs` | `Active`, `Archived` — stored as string in the DB (not int) to prevent silent corruption on reorder |
+| `Grade` | `Entities/Grade.cs` | `BaseEntity` + `ITenantScoped`. Top-level structural catalog entry (e.g. "Grade 5"). `EnsureNoSections()` enforces the delete guard — throws `DomainException` if any sections exist. Backing field `_sections` exposed as `IReadOnlyList<Section> Sections`. Direct instantiation (no factory — no invariant requiring controlled construction). |
+| `Section` | `Entities/Section.cs` | `BaseEntity` + `ITenantScoped`. Belongs to a `Grade`. Name unique per grade (not globally). Always accessed through `IGradeRepository` — no standalone repository. |
 
 ## Application (`SchoolMgmt.Application`)
 
@@ -39,13 +41,18 @@
 | `AcademicYearDto` / `SemesterDto` | `AcademicYears/Dtos/*.cs` | Read DTOs for academic years and semesters |
 | `CreateAcademicYearRequest` / `UpdateSemesterRequest` | `AcademicYears/Dtos/*.cs` | Write DTOs validated by FluentValidation |
 | `CreateAcademicYearRequestValidator` / `UpdateSemesterRequestValidator` | `AcademicYears/Validators/*.cs` | FluentValidation validators — auto-discovered via `AddValidatorsFromAssembly` |
-| `DependencyInjection.AddApplication()` | `DependencyInjection.cs` | Registers `AuthService`, `AcademicYearService`, and all FluentValidation validators from the Application assembly |
+| `IGradeRepository` | `Grades/IGradeRepository.cs` | Extends `IRepository<Grade>`. `GetAllWithSectionsAsync`, `GetWithSectionsAsync`, `GradeNameExistsAsync`, `GetSectionAsync`, `SectionNameExistsInGradeAsync`, `AddSectionAsync`, `RemoveSection`. Section ops go through the grade repository — no standalone `ISectionRepository`. |
+| `GradeService` | `Grades/GradeService.cs` | `CreateGradeAsync` (409 on duplicate name), `GetAllGradesAsync` (ordered by `DisplayOrder`), `GetGradeByIdAsync`, `UpdateGradeAsync`, `DeleteGradeAsync` (calls `EnsureNoSections`), `AddSectionAsync`, `UpdateSectionAsync`, `DeleteSectionAsync`. Private static `ToDto(Grade)` / `ToDto(Section)` mappers — no AutoMapper. |
+| `GradeDto` / `SectionDto` | `Grades/Dtos/GradeDto.cs` | Read DTOs for grades and sections |
+| `CreateGradeRequest` / `UpdateGradeRequest` / `CreateSectionRequest` / `UpdateSectionRequest` | `Grades/Dtos/CreateGradeRequest.cs` | Write DTOs validated by FluentValidation |
+| `CreateGradeRequestValidator` / `UpdateGradeRequestValidator` / `CreateSectionRequestValidator` / `UpdateSectionRequestValidator` | `Grades/Validators/GradeRequestValidators.cs` | FluentValidation validators — auto-discovered via `AddValidatorsFromAssembly` |
+| `DependencyInjection.AddApplication()` | `DependencyInjection.cs` | Registers `AuthService`, `AcademicYearService`, `GradeService`, and all FluentValidation validators from the Application assembly |
 
 ## Infrastructure (`SchoolMgmt.Infrastructure`)
 
 | Type | Location | Purpose |
 |---|---|---|
-| `AppDbContext` | `Persistence/AppDbContext.cs` | EF Core `DbContext`. Applies a global query filter to every `ITenantScoped` entity automatically (reflection over the model, not hand-written per entity). `SaveChangesAsync` is overridden to stamp `CreatedAt`/`UpdatedAt`/`SchoolId` automatically. `DbSet`s: `Schools`, `Users`, `RefreshTokens`, `AcademicYears`, `Semesters` |
+| `AppDbContext` | `Persistence/AppDbContext.cs` | EF Core `DbContext`. Applies a global query filter to every `ITenantScoped` entity automatically (reflection over the model, not hand-written per entity). `SaveChangesAsync` is overridden to stamp `CreatedAt`/`UpdatedAt`/`SchoolId` automatically. `DbSet`s: `Schools`, `Users`, `RefreshTokens`, `AcademicYears`, `Semesters`, `Grades`, `Sections` |
 | `AppDbContextDesignTimeFactory` | `Persistence/AppDbContextDesignTimeFactory.cs` | `IDesignTimeDbContextFactory<AppDbContext>` — lets `dotnet ef` construct the context without the WebApi host. Reads `SCHOOLMGMT_CONNECTION_STRING` env var, falls back to a local default. Uses `StaticTenantProvider` (no `HttpContext` at design time) |
 | `SchoolConfiguration` | `Persistence/Configurations/SchoolConfiguration.cs` | `IEntityTypeConfiguration<School>` — incl. the `HasData` seed for the one demo school (well-known id `00000000-0000-0000-0000-000000000001`) |
 | `UserConfiguration` | `Persistence/Configurations/UserConfiguration.cs` | `IEntityTypeConfiguration<User>` — unique index `(SchoolId, Email)`, `Role` stored as string. Deliberately NO `HasData` seed — see `DemoDataSeeder` |
@@ -64,7 +71,10 @@
 | `AcademicYearConfiguration` | `Persistence/Configurations/AcademicYearConfiguration.cs` | `IEntityTypeConfiguration<AcademicYear>` — unique index `(SchoolId, Name)`, `Status` stored as string, backing-field wiring for `_semesters` navigation |
 | `SemesterConfiguration` | `Persistence/Configurations/SemesterConfiguration.cs` | `IEntityTypeConfiguration<Semester>` — FK to `AcademicYears.Id` with `ON DELETE RESTRICT` (years are never hard-deleted, only archived) |
 | `AcademicYearRepository` (internal) | `Persistence/Repositories/AcademicYearRepository.cs` | `IAcademicYearRepository` implementation. Uses `context.Set<Semester>()` directly for semester queries — no standalone `ISemesterRepository` |
-| `DependencyInjection.AddInfrastructure()` | `DependencyInjection.cs` | Composition-root extension method — registers `AppDbContext`, `ITenantProvider` (→ `HttpContextTenantProvider`), `IDateTimeProvider`, `IUnitOfWork`, `IRepository<>`, `IUserRepository`, `IRefreshTokenRepository`, `IAcademicYearRepository`, `IPasswordHasher`, `IJwtTokenGenerator` |
+| `GradeConfiguration` | `Persistence/Configurations/GradeConfiguration.cs` | `IEntityTypeConfiguration<Grade>` — unique index `(SchoolId, Name)`, backing-field wiring for `_sections` navigation via `builder.Navigation(x => x.Sections).HasField("_sections")` |
+| `SectionConfiguration` | `Persistence/Configurations/SectionConfiguration.cs` | `IEntityTypeConfiguration<Section>` — unique index `(GradeId, Name)`, FK to `Grades.Id` with `ON DELETE RESTRICT`. Uses `.WithMany(g => g.Sections)` (public property, not string) to avoid conflict with `HasField` in `GradeConfiguration`. |
+| `GradeRepository` (internal) | `Persistence/Repositories/GradeRepository.cs` | `IGradeRepository` implementation. Uses `_context.Set<Section>()` directly for section queries — same pattern as `AcademicYearRepository` with `Semester`. |
+| `DependencyInjection.AddInfrastructure()` | `DependencyInjection.cs` | Composition-root extension method — registers `AppDbContext`, `ITenantProvider` (→ `HttpContextTenantProvider`), `IDateTimeProvider`, `IUnitOfWork`, `IRepository<>`, `IUserRepository`, `IRefreshTokenRepository`, `IAcademicYearRepository`, `IGradeRepository`, `IPasswordHasher`, `IJwtTokenGenerator` |
 
 ## WebApi (`SchoolMgmt.WebApi`)
 
@@ -77,6 +87,7 @@
 | `DomainExceptionFilter` | `Filters/DomainExceptionFilter.cs` | Global `IExceptionFilter` — maps `DomainException` → 400, `NotFoundException` → 404, `ConflictException` → 409. Registered in `AddControllers(options => ...)` in `Program.cs` |
 | `ValidationFilter` | `Filters/ValidationFilter.cs` | Global `IAsyncActionFilter` — resolves `IValidator<TRequest>` from DI for each action argument, short-circuits with 400 + field-grouped errors on validation failure |
 | `AcademicYearsController` | `Controllers/AcademicYearsController.cs` | `[Authorize(Roles = "Admin")]`. `GET /api/academic-years`, `GET /api/academic-years/{id}`, `POST /api/academic-years` (201 + Location), `PUT /api/academic-years/{yearId}/semesters/{semesterId}`, `POST /api/academic-years/{id}/set-current`, `POST /api/academic-years/{yearId}/semesters/{semesterId}/set-current`, `POST /api/academic-years/{id}/archive` |
+| `GradesController` | `Controllers/GradesController.cs` | `[Authorize(Roles = "Admin")]`. `GET /api/grades`, `GET /api/grades/{id}`, `POST /api/grades` (201), `PUT /api/grades/{id}`, `DELETE /api/grades/{id}` (400 if has sections), `POST /api/grades/{gradeId}/sections` (201), `PUT /api/grades/{gradeId}/sections/{sectionId}`, `DELETE /api/grades/{gradeId}/sections/{sectionId}` |
 
 ## Migrations
 
@@ -85,6 +96,7 @@
 | `InitialCreate` (`Persistence/Migrations/`) | Creates `Schools` table, seeds the one demo school |
 | `AddUsersAndRefreshTokens` (`Persistence/Migrations/`) | Creates `Users`/`RefreshTokens` tables. No seed data — the demo Admin user is seeded at runtime instead, see `DemoDataSeeder` |
 | `AddAcademicYears` (`Persistence/Migrations/`) | Creates `AcademicYears` and `Semesters` tables. `Status` stored as `varchar(20)`. Unique index `(SchoolId, Name)` on `AcademicYears`. FK `AcademicYearId → AcademicYears.Id` with `ON DELETE RESTRICT`. |
+| `AddGradesAndSections` (`Persistence/Migrations/`) | Creates `Grades` and `Sections` tables. Unique index `(SchoolId, Name)` on `Grades`. Unique index `(GradeId, Name)` on `Sections`. FK `GradeId → Grades.Id` with `ON DELETE RESTRICT`. |
 
 ## Tests
 
@@ -92,4 +104,4 @@
 |---|---|
 | `tests/SchoolMgmt.Infrastructure.Tests` | `AppDbContext.SaveChangesAsync` audit/tenant stamping; `AuthService` (login/refresh-rotation/theft-detection/expiry) via hand-written fakes; `JwtTokenGenerator` claim correctness. EF Core InMemory provider where a `DbContext` is needed, no mocking library anywhere |
 | `tests/SchoolMgmt.Domain.Tests` | Pure domain logic unit tests — no DB, no fakes. `AcademicYearTests`: `Create` produces exactly 2 semesters named correctly; `EnsureNotArchived` throws/doesn't throw; `Archive` sets status / throws when current |
-| `tests/SchoolMgmt.IntegrationTests` | Tenant query-filter isolation, `Repository`/`UnitOfWork` staging + transaction commit/rollback, seed-migration correctness, full HTTP auth flows (`LoginTests`, `RefreshRotationTests` incl. theft-family-revocation, `LogoutTests`, `TenantResolutionTests` — proves `HttpContextTenantProvider` resolves `SchoolId` on a real authenticated request), and a composition-root smoke test — all against real Postgres via Testcontainers. `PostgresContainerFixture.CreateFactory()` is the shared `WebApplicationFactory<Program>` builder (overrides connection string + JWT config, explicitly sets `UseEnvironment("Development")` so `DemoDataSeeder` actually runs — `WebApplicationFactory` defaults to `Production` otherwise) reused across all HTTP-level tests. `AcademicYearsControllerTests`: full CRUD + set-current + archive + auth gates (401/403) |
+| `tests/SchoolMgmt.IntegrationTests` | Tenant query-filter isolation, `Repository`/`UnitOfWork` staging + transaction commit/rollback, seed-migration correctness, full HTTP auth flows (`LoginTests`, `RefreshRotationTests` incl. theft-family-revocation, `LogoutTests`, `TenantResolutionTests` — proves `HttpContextTenantProvider` resolves `SchoolId` on a real authenticated request), and a composition-root smoke test — all against real Postgres via Testcontainers. `PostgresContainerFixture.CreateFactory()` is the shared `WebApplicationFactory<Program>` builder (overrides connection string + JWT config, explicitly sets `UseEnvironment("Development")` so `DemoDataSeeder` actually runs — `WebApplicationFactory` defaults to `Production` otherwise) reused across all HTTP-level tests. `AcademicYearsControllerTests`: full CRUD + set-current + archive + auth gates (401/403). `GradesControllerTests`: full CRUD for grades and sections, per-grade name uniqueness (same name allowed across grades), delete-with-sections returns 400, auth gates (401/403) |

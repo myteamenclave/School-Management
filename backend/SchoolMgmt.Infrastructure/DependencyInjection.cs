@@ -8,6 +8,7 @@ using SchoolMgmt.Infrastructure.Common;
 using SchoolMgmt.Infrastructure.MultiTenancy;
 using SchoolMgmt.Infrastructure.Persistence;
 using SchoolMgmt.Application.AcademicYears;
+using SchoolMgmt.Application.Grades;
 using SchoolMgmt.Infrastructure.Persistence.Repositories;
 
 namespace SchoolMgmt.Infrastructure;
@@ -31,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAcademicYearRepository, AcademicYearRepository>();
+        services.AddScoped<IGradeRepository, GradeRepository>();
 
         services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
