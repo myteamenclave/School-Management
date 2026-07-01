@@ -28,13 +28,13 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
 - Student CRUD — [idea doc](ideas/03-student-crud.md)
   - [x] Backend
   - [ ] Frontend
-- Bulk student/staff import (CSV)
+- Bulk student/teacher import (CSV)
   - [ ] Backend
   - [ ] Frontend
-- Staff CRUD
+- Teacher management (Admin creates/manages teacher accounts — name, contact, assigned subjects/classes)
   - [ ] Backend
   - [ ] Frontend
-- Class/section assignment (students to classes, staff to subjects/classes)
+- Class/section assignment (students to classes, teachers to subjects/classes)
   - [ ] Backend
   - [ ] Frontend
 - Fee structure templates (installments, discounts, scholarships)
@@ -46,7 +46,7 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
 - Financial audit trail (who changed/collected what, when)
   - [ ] Backend
   - [ ] Frontend
-- Overview dashboard (revenue vs. outstanding fees, enrollment trend, attendance trend, staff overview)
+- Overview dashboard (revenue vs. outstanding fees, enrollment trend, attendance trend, teacher overview)
   - [ ] Backend
   - [ ] Frontend
 
