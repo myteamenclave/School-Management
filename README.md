@@ -4,15 +4,6 @@ A school management system covering student records, staff management, fee colle
 
 See [docs/ideas/school-management-system.md](docs/ideas/school-management-system.md) for the full problem statement and scope rationale.
 
-## Status
-
-| Spec | Covers | Status |
-|---|---|---|
-| [specs/01-implement-multi-tenant-data-model.md](specs/01-implement-multi-tenant-data-model.md) | Base entity conventions, EF Core tenant query filters, `ITenantProvider` abstraction, Repository/UnitOfWork pattern, seed school | ✅ Implemented |
-| [specs/02-implement-auth.md](specs/02-implement-auth.md) | JWT-in-cookie auth, refresh rotation, RBAC, replaces the placeholder tenant provider with a real claims-based one | ✅ Implemented |
-
-Frontend has not been started yet.
-
 ## Tech Stack
 
 - **Backend:** .NET 8.0, Clean Architecture (Domain / Application / Infrastructure / WebApi), Entity Framework Core, PostgreSQL

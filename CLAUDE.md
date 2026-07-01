@@ -33,8 +33,9 @@ Concrete technical plans for *how* a feature is actually implemented. **Every fe
 |---|---|---|
 | [specs/01-implement-multi-tenant-data-model.md](specs/01-implement-multi-tenant-data-model.md) | Base entity conventions, EF Core global query filters, `ITenantProvider` abstraction, seed school | Implemented |
 | [specs/02-implement-auth.md](specs/02-implement-auth.md) | JWT-in-cookie auth, refresh rotation + theft detection, RBAC, real claims-based `ITenantProvider` | Implemented |
-| [specs/03-implement-academic-year-term-configuration.md](specs/03-implement-academic-year-term-configuration.md) | Academic year + semester entities, domain guard (`EnsureNotArchived`), Admin CRUD API | Ready to implement |
-| [specs/04-implement-class-section-structure.md](specs/04-implement-class-section-structure.md) | Grade + Section entities, per-grade section CRUD, `EnsureNoSections` delete guard, Admin CRUD API | Ready to implement |
+| [specs/03-implement-academic-year-term-configuration.md](specs/03-implement-academic-year-term-configuration.md) | Academic year + semester entities, domain guard (`EnsureNotArchived`), Admin CRUD API | Implemented |
+| [specs/04-implement-class-section-structure.md](specs/04-implement-class-section-structure.md) | Grade + Section entities, per-grade section CRUD, `EnsureNoSections` delete guard, Admin CRUD API | Implemented |
+| [specs/05-implement-student-crud.md](specs/05-implement-student-crud.md) | Student entity, `StudentCode` auto-generation (YYYY-NNNNNN), Admin CRUD, inline guardian fields, `EnrollmentStatus` lifecycle, no hard delete | Implemented |
 
 ### Coding Rules — `.claude/rules/`
 Enforceable coding rules an agent must follow while writing code, not background context.
