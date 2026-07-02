@@ -23,6 +23,9 @@ public class AuthService(
         if (user is null || !passwordHasher.VerifyPassword(user.PasswordHash, request.Password))
             return null; // same failure for "no such user" and "wrong password" — no user enumeration
 
+        if (!user.IsActive)
+            return null;
+
         return await IssueTokensAsync(user, sessionId: Guid.NewGuid(), tokenToReplace: null, request.RememberMe, cancellationToken);
     }
 

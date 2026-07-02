@@ -13,6 +13,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.DisplayName).IsRequired().HasMaxLength(200);
         builder.Property(u => u.Role).HasConversion<string>().HasMaxLength(50);
 
+        builder.Property(u => u.IsActive).IsRequired().HasDefaultValue(true);
+
         builder.HasIndex(u => new { u.SchoolId, u.Email }).IsUnique();
 
         // No HasData seed here, deliberately — unlike School (specs/01), the demo

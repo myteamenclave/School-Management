@@ -9,4 +9,5 @@ public class User : BaseEntity, ITenantScoped
     public string PasswordHash { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public UserRole Role { get; set; }
+    public bool IsActive { get; set; } = true;
 }
