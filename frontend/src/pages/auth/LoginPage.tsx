@@ -13,6 +13,7 @@ import { Label } from '../../components/ui/label'
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email'),
   password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean(),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
@@ -29,11 +30,12 @@ export function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    defaultValues: { rememberMe: false },
   })
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
-      const res = await authApi.login(values.email, values.password)
+      const res = await authApi.login(values.email, values.password, values.rememberMe)
       setUser(res.data.user)
       navigate('/dashboard', { replace: true })
     } catch (err: unknown) {
@@ -189,6 +191,7 @@ export function LoginPage() {
                   id="remember"
                   type="checkbox"
                   className="h-4 w-4 cursor-pointer rounded accent-primary"
+                  {...register('rememberMe')}
                 />
                 <label htmlFor="remember" className="cursor-pointer select-none text-[14px] text-muted-foreground">
                   Keep me signed in
