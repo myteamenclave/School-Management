@@ -44,12 +44,8 @@ services:
     networks:
       - schoolmgmt
 
-  # Not yet functional — no frontend/Dockerfile exists. Gated behind a profile
-  # so it doesn't break `docker compose up` for everyone else in the meantime.
-  # Activate once frontend exists: `docker compose --profile frontend up`.
   frontend:
     image: schoolmgmt-frontend:latest
-    profiles: ["frontend"]
     depends_on:
       - api
     networks:
