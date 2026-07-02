@@ -81,7 +81,9 @@ public class AcademicYear : BaseEntity, ITenantScoped
             throw new DomainException("Cannot modify data in an archived academic year.");
     }
 
-    // Factory — always called instead of the constructor; enforces the 2-semester invariant
+    // Factory — always called instead of the constructor; enforces the 2-semester invariant.
+    // Semester dates are auto-calculated by splitting the year's date range at the midpoint.
+    // Admin can refine them afterward via UpdateSemesterAsync.
     public static AcademicYear Create(string name, DateOnly startDate, DateOnly endDate)
     {
         var year = new AcademicYear
@@ -90,8 +92,24 @@ public class AcademicYear : BaseEntity, ITenantScoped
             StartDate = startDate,
             EndDate = endDate,
         };
-        year._semesters.Add(new Semester { Name = "Semester 1", AcademicYear = year });
-        year._semesters.Add(new Semester { Name = "Semester 2", AcademicYear = year });
+
+        var totalDays = endDate.DayNumber - startDate.DayNumber;
+        var midDate = startDate.AddDays(totalDays / 2);
+
+        year._semesters.Add(new Semester
+        {
+            Name = "Semester 1",
+            AcademicYear = year,
+            StartDate = startDate,
+            EndDate = midDate,
+        });
+        year._semesters.Add(new Semester
+        {
+            Name = "Semester 2",
+            AcademicYear = year,
+            StartDate = midDate.AddDays(1),
+            EndDate = endDate,
+        });
         return year;
     }
 }
@@ -472,7 +490,7 @@ Apply locally:  dotnet ef database update --project backend/SchoolMgmt.Infrastru
 
 Pure domain logic tests:
 
-- `AcademicYear.Create` produces exactly 2 semesters named "Semester 1" and "Semester 2"
+- `AcademicYear.Create` produces exactly 2 semesters named "Semester 1" and "Semester 2" with dates auto-split at the midpoint of the year range
 - `AcademicYear.EnsureNotArchived` throws `DomainException` when `Status == Archived`
 - `AcademicYear.EnsureNotArchived` does not throw when `Status == Active`
 - `AcademicYear.Archive` throws `DomainException` when `IsCurrent == true`
@@ -498,12 +516,12 @@ Against real Postgres (Testcontainers), authenticated as demo Admin:
 ## Boundaries
 
 - **Always:** call `year.EnsureNotArchived()` in any downstream service method that writes data scoped to an academic year or semester — this is the enforcement contract established by this spec for all future modules. Run `dotnet test` before considering any task complete.
-- **Ask first:** changing `DateOnly` to `DateTimeOffset` for start/end dates (would require a migration change and affects all downstream modules); changing the "two semesters" invariant in `AcademicYear.Create` (would break the `SetCurrentYearAsync` auto-set-Semester-1 logic).
+- **Ask first:** changing `DateOnly` to `DateTimeOffset` for start/end dates (would require a migration change and affects all downstream modules); changing the "two semesters" invariant in `AcademicYear.Create` (would break the `SetCurrentYearAsync` auto-set-Semester-1 logic); changing the midpoint-split semester scaffolding to a different default (e.g. fixed month boundaries) — downstream modules may rely on the initial date values.
 - **Never:** skip the `EnsureNotArchived()` guard in a downstream service and write directly to an archived year; add a `GET` endpoint that mutates state (SameSite=Lax CSRF rule from [.claude/rules/backend.md](../.claude/rules/backend.md)); delete an `AcademicYear` or `Semester` record — archiving is the only lifecycle end-state; let the `IsCurrent` flag get set outside of `SetCurrent(bool)` / `Archive()` on the entity.
 
 ## Success Criteria
 
-- `AcademicYear.Create` always produces exactly 2 semesters ("Semester 1", "Semester 2") — verified by domain unit test.
+- `AcademicYear.Create` always produces exactly 2 semesters ("Semester 1", "Semester 2") with dates split at the year midpoint — verified by domain unit test.
 - `AcademicYear.EnsureNotArchived()` throws `DomainException` when archived — domain unit test passes.
 - `POST /api/academic-years` creates a year with 2 auto-scaffolded semesters — integration test passes.
 - `POST /api/academic-years/{id}/set-current` atomically unsets the previous current year/semester and sets the new year + its Semester 1 as current — verified by integration test asserting the before/after state.

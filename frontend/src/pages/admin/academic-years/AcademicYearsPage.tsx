@@ -26,8 +26,10 @@ export function AcademicYearsPage() {
     queryFn: academicYearsApi.list,
   })
 
+  const today = new Date().toISOString().slice(0, 10)
   const currentYear = years.find((y) => y.isCurrent) ?? null
-  const previousYears = years.filter((y) => !y.isCurrent && y.status === 'Active')
+  const upcomingYears = years.filter((y) => !y.isCurrent && y.status === 'Active' && y.startDate > today)
+  const previousYears = years.filter((y) => !y.isCurrent && y.status === 'Active' && y.startDate <= today)
   const archivedYears = years.filter((y) => y.status === 'Archived')
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ACADEMIC_YEAR_KEYS.all })
@@ -111,6 +113,29 @@ export function AcademicYearsPage() {
               setCurrentSemesterMutation.mutate({ yearId, semesterId })
             }
           />
+        </section>
+      )}
+
+      {/* Upcoming Years */}
+      {upcomingYears.length > 0 && (
+        <section className="mb-6">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Upcoming Years
+          </h2>
+          <div className="flex flex-col gap-3">
+            {upcomingYears.map((year) => (
+              <AcademicYearCard
+                key={year.id}
+                year={year}
+                onSetCurrent={(id) => setCurrentMutation.mutate(id)}
+                onArchive={(id) => archiveMutation.mutate(id)}
+                onEditSemester={setEditingSemester}
+                onSetCurrentSemester={(yearId, semesterId) =>
+                  setCurrentSemesterMutation.mutate({ yearId, semesterId })
+                }
+              />
+            ))}
+          </div>
         </section>
       )}
 

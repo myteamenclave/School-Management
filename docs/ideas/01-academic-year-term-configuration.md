@@ -8,17 +8,29 @@ has a consistent, enforced time anchor to operate against?
 ## Recommended Direction
 A two-level calendar structure: **AcademicYear** (e.g. "2024-2025") contains
 exactly **two Semesters** (Semester 1, Semester 2), auto-scaffolded when the year
-is created. Admin explicitly marks one year and one semester as "current" — no
-automatic inference from dates. When a year is archived, a domain guard
-(`EnsureNotArchived()`) prevents any downstream module from writing to it, giving
-all future services a consistent, centralized enforcement contract rather than
-a "remember to check" burden distributed across modules.
+is created. Semester dates are initialised automatically by splitting the year's
+date range at the midpoint — admin can refine them afterward via the Edit modal.
+
+**Two signals, two jobs — deliberately kept separate:**
+
+| Signal | Owner | Purpose |
+|---|---|---|
+| `IsCurrent` flag | Admin sets it explicitly | Business logic — the authoritative source for fees, grades, enrollment, attendance |
+| `StartDate`/`EndDate` vs today | Calendar | Display labels only — Completed / Upcoming / "In date range" |
+
+The `IsCurrent` flag is a hybrid: dates provide a default suggestion (the semester whose range contains today is highlighted as a nudge), but the admin explicitly confirms the transition. This handles irregular school calendars — delayed term starts, closures — without forcing the system to second-guess an admin decision. The flag never changes automatically.
+
+When a year is archived, a domain guard (`EnsureNotArchived()`) prevents any
+downstream module from writing to it, giving all future services a consistent,
+centralized enforcement contract rather than a "remember to check" burden
+distributed across modules.
 
 ## Key Assumptions to Validate
-- [ ] Two semesters per year is a fixed rule for this school — no trimester or
-      quarter variation expected.
-- [ ] Admin-managed transitions (explicit "set current", explicit "archive") are
-      sufficient — no need for scheduled/automated year rollover.
+- [x] Two semesters per year is a fixed rule for this school — no trimester or
+      quarter variation expected. *(Confirmed.)*
+- [x] Admin-managed `IsCurrent` transitions are sufficient — dates suggest,
+      admin confirms. No fully automatic flag-flip from the calendar.
+      *(Confirmed — hybrid model adopted.)*
 - [ ] Light read-only enforcement (domain guard only, no DB-level constraint) is
       acceptable for v1 — full enforcement completes as each downstream module
       is built and calls the guard.
@@ -45,8 +57,10 @@ auto-current inference, custom term counts, bulk year setup wizard
 - **Year/semester deletion** — once a year is created and referenced by any
   downstream record it cannot be safely deleted; archiving is the safe lifecycle
   end state.
-- **Automatic "current" based on date ranges** — adds fallback logic and edge
-  cases (what if today is between years?) for minimal UX benefit in an admin tool.
+- **Automatic `IsCurrent` flag-flip from dates** — the flag is admin-controlled
+  intentionally. Dates serve as a display nudge ("In date range") but never
+  silently override the admin's decision. Edge cases (gap between years, delayed
+  term start, school closure) would produce wrong state with a fully automatic model.
 - **Custom term counts (3 terms, quarters)** — the target school uses 2 semesters;
   flexible term counts add config surface with no immediate payoff.
 - **Bulk/wizard year setup** — a single create form is sufficient for v1 admin
@@ -55,3 +69,6 @@ auto-current inference, custom term counts, bulk year setup wizard
 ## Open Questions
 - ~~Should setting a year as current auto-set its Semester 1 as the current
   semester?~~ Resolved: yes — auto-set Semester 1, admin can override.
+- ~~Should semester sub-labels (Upcoming/Completed) be derived from dates or
+  from the IsCurrent flag?~~ Resolved: dates for display labels, flag for
+  business logic — two signals, two jobs. See Recommended Direction above.
