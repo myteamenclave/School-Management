@@ -38,8 +38,24 @@ public class AcademicYear : BaseEntity, ITenantScoped
             StartDate = startDate,
             EndDate = endDate,
         };
-        year._semesters.Add(new Semester { Name = "Semester 1", AcademicYear = year });
-        year._semesters.Add(new Semester { Name = "Semester 2", AcademicYear = year });
+
+        var totalDays = endDate.DayNumber - startDate.DayNumber;
+        var midDate = startDate.AddDays(totalDays / 2);
+
+        year._semesters.Add(new Semester
+        {
+            Name = "Semester 1",
+            AcademicYear = year,
+            StartDate = startDate,
+            EndDate = midDate,
+        });
+        year._semesters.Add(new Semester
+        {
+            Name = "Semester 2",
+            AcademicYear = year,
+            StartDate = midDate.AddDays(1),
+            EndDate = endDate,
+        });
         return year;
     }
 }
