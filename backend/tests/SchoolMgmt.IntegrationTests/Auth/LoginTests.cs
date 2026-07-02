@@ -53,4 +53,32 @@ public class LoginTests(PostgresContainerFixture fixture)
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Login_WithRememberMeTrue_SetsCookiesWithExpires()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/login",
+            new { email = "admin@demoschool.test", password = "Passw0rd!", rememberMe = true });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var setCookies = response.Headers.GetValues("Set-Cookie").ToList();
+        Assert.All(setCookies, c => Assert.Contains("expires=", c, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Login_WithRememberMeFalse_SetsCookiesWithoutExpires()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/login",
+            new { email = "admin@demoschool.test", password = "Passw0rd!", rememberMe = false });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var setCookies = response.Headers.GetValues("Set-Cookie").ToList();
+        Assert.All(setCookies, c => Assert.DoesNotContain("expires=", c, StringComparison.OrdinalIgnoreCase));
+    }
 }

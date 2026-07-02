@@ -120,7 +120,9 @@ public interface IJwtTokenGenerator
 }
 ```
 
-Access token claims: `sub` (user id), `email`, `school_id`, `ClaimTypes.Role` (so `[Authorize(Roles = "Admin")]` works natively), `name` (display name). Signed HMAC-SHA256 with a key from configuration (`Jwt:Secret`, `Jwt:Issuer`, `Jwt:Audience`, `Jwt:AccessTokenMinutes` = 15, `Jwt:RefreshTokenDays` = 7). Refresh tokens are NOT JWTs — a cryptographically random string (`RandomNumberGenerator`, 256 bits, base64url), stored only as a SHA-256 hash (fast hash is correct here — refresh tokens are already high-entropy secrets, unlike passwords).
+Access token claims: `sub` (user id), `email`, `school_id`, `ClaimTypes.Role` (so `[Authorize(Roles = "Admin")]` works natively), `name` (display name). Signed HMAC-SHA256 with a key from configuration (`Jwt:Secret`, `Jwt:Issuer`, `Jwt:Audience`, `Jwt:AccessTokenMinutes` = 15, `Jwt:RefreshTokenDays` = 30, `Jwt:SessionRefreshTokenHours` = 24). Refresh tokens are NOT JWTs — a cryptographically random string (`RandomNumberGenerator`, 256 bits, base64url), stored only as a SHA-256 hash (fast hash is correct here — refresh tokens are already high-entropy secrets, unlike passwords).
+
+`Jwt:RefreshTokenDays` applies when `RememberMe = true`. `Jwt:SessionRefreshTokenHours` applies when `RememberMe = false` — a shorter server-side lifetime combined with a session cookie (no `Expires`) means the token is invalidated both when the browser closes and after the configured hours, whichever comes first.
 
 ### Cookie-based JWT validation (`SchoolMgmt.WebApi`)
 
@@ -156,7 +158,13 @@ public class AuthService(
 }
 ```
 
-`AuthResult` carries the new access token string, the new raw refresh token string, and their expiries — plain data, no `HttpContext`/cookie knowledge in the Application layer. **Setting the actual `Set-Cookie` headers is the controller's job** (HTTP concern, stays in WebApi):
+`LoginRequest` includes `RememberMe`:
+
+```csharp
+public record LoginRequest(string Email, string Password, bool RememberMe = false);
+```
+
+`AuthResult` carries the new access token string, the new raw refresh token string, their expiries, and the `RememberMe` flag — plain data, no `HttpContext`/cookie knowledge in the Application layer. `LoginAsync` computes `RefreshTokenExpiresAt` as `now + RefreshTokenDays` when `RememberMe = true`, or `now + SessionRefreshTokenHours` when `false`. **Setting the actual `Set-Cookie` headers is the controller's job** (HTTP concern, stays in WebApi):
 
 ```csharp
 [AllowAnonymous, HttpPost("login")]
@@ -167,6 +175,10 @@ public async Task<IActionResult> Login(LoginRequest request)
     return Ok(new { result.User });
 }
 ```
+
+`SetAuthCookies` behaviour depends on `result.RememberMe`:
+- `true` → both cookies get `Expires = <token expiry>` (persistent — survives browser restart)
+- `false` → `Expires` is **omitted** on both cookies (session cookies — cleared when the browser closes), even though the refresh token has a server-side expiry of `SessionRefreshTokenHours`
 
 `IPasswordHasher` (Application interface, implemented in Infrastructure wrapping `PasswordHasher<User>`) — same interfaces-live-where-consumed rule as everything else in this codebase.
 
@@ -253,10 +265,11 @@ Per [.claude/context/architecture.md § Testing](../.claude/context/architecture
 
 - **Unit (xUnit, hand-written fakes, no mocking library):**
   - `AuthService.LoginAsync` — correct credentials return a token pair; wrong password returns a failure result without revealing whether the email exists; nonexistent email behaves identically to wrong password (no user enumeration).
+  - `AuthService.LoginAsync` with `RememberMe = true` → `RefreshTokenExpiresAt` is `now + RefreshTokenDays`; with `RememberMe = false` → `RefreshTokenExpiresAt` is `now + SessionRefreshTokenHours`.
   - `AuthService.RefreshAsync` — valid token rotates and returns a new pair under the same `SessionId`; reused (already-replaced) token revokes the entire session family; expired token is rejected and revoked.
   - `JwtTokenGenerator.GenerateAccessToken` — decoded token contains `sub`, `school_id`, role claim with the expected values.
 - **Integration (xUnit + `WebApplicationFactory` + Testcontainers/Postgres):**
-  - `POST /api/auth/login` with seeded demo credentials → 200, two `Set-Cookie` headers (`access_token`, `refresh_token`) each with `HttpOnly`, `Secure`, `SameSite=Lax`.
+  - `POST /api/auth/login` with `rememberMe: true` → cookies have `Expires` set; with `rememberMe: false` → cookies have no `Expires` (session cookies). Both variants: `HttpOnly`, `Secure`, `SameSite=Lax`.
   - `GET /api/auth/me` with the login cookies attached → 200, correct user info; confirms `HttpContextTenantProvider.CurrentSchoolId` resolves correctly with zero other code changes (the spec #1 payoff).
   - `POST /api/auth/refresh` with a valid refresh cookie → new cookies issued; the OLD refresh token can no longer be used.
   - Replaying an already-rotated refresh token → that whole session family (incl. the most recently issued token) is revoked; subsequent refresh attempts with any token from that family fail.
@@ -273,7 +286,7 @@ Per [.claude/context/architecture.md § Testing](../.claude/context/architecture
 
 - `User`/`RefreshToken` entities exist, both `ITenantScoped`; migration creates their tables and seeds one demo Admin user tied to the spec #1 school.
 - `HttpContextTenantProvider` replaces `StaticTenantProvider` via a single DI registration line change — no other file touches `AppDbContext` or the query-filter wiring.
-- Login issues correctly-attributed cookies (`HttpOnly`, `Secure`, `SameSite=Lax`) containing a valid JWT with `school_id` and role claims.
+- Login issues correctly-attributed cookies (`HttpOnly`, `Secure`, `SameSite=Lax`) containing a valid JWT with `school_id` and role claims; `rememberMe = true` produces persistent cookies with `Expires`, `rememberMe = false` produces session cookies without `Expires`.
 - Refresh rotates tokens correctly and detects/punishes reuse by revoking the entire session family.
 - Logout revokes server-side, not just client-side.
 - `[Authorize(Roles = "...")]` is usable by any future controller without further plumbing.

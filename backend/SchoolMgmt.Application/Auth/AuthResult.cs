@@ -7,4 +7,5 @@ public record AuthResult(
     DateTimeOffset AccessTokenExpiresAt,
     string RefreshToken,
     DateTimeOffset RefreshTokenExpiresAt,
+    bool RememberMe,
     AuthenticatedUser User);

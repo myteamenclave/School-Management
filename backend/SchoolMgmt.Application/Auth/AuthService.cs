@@ -23,7 +23,7 @@ public class AuthService(
         if (user is null || !passwordHasher.VerifyPassword(user.PasswordHash, request.Password))
             return null; // same failure for "no such user" and "wrong password" — no user enumeration
 
-        return await IssueTokensAsync(user, sessionId: Guid.NewGuid(), tokenToReplace: null, cancellationToken);
+        return await IssueTokensAsync(user, sessionId: Guid.NewGuid(), tokenToReplace: null, request.RememberMe, cancellationToken);
     }
 
     public async Task<AuthResult?> RefreshAsync(string rawRefreshToken, CancellationToken cancellationToken = default)
@@ -53,7 +53,7 @@ public class AuthService(
             return null; // no silent rotation of an expired token
         }
 
-        return await IssueTokensAsync(existing.User, existing.SessionId, existing, cancellationToken);
+        return await IssueTokensAsync(existing.User, existing.SessionId, existing, existing.RememberMe, cancellationToken);
     }
 
     public async Task LogoutAsync(string rawRefreshToken, CancellationToken cancellationToken = default)
@@ -69,10 +69,13 @@ public class AuthService(
     }
 
     private async Task<AuthResult> IssueTokensAsync(
-        User user, Guid sessionId, RefreshToken? tokenToReplace, CancellationToken cancellationToken)
+        User user, Guid sessionId, RefreshToken? tokenToReplace, bool rememberMe, CancellationToken cancellationToken)
     {
         var now = dateTimeProvider.UtcNow;
         var rawRefreshToken = tokenGenerator.GenerateRefreshToken();
+        var refreshTokenLifetime = rememberMe
+            ? TimeSpan.FromDays(_jwtOptions.RefreshTokenDays)
+            : TimeSpan.FromHours(_jwtOptions.SessionRefreshTokenHours);
 
         var newRefreshToken = new RefreshToken
         {
@@ -80,7 +83,8 @@ public class AuthService(
             SchoolId = user.SchoolId, // explicit — ITenantProvider isn't resolvable pre-auth, see spec #2 design notes
             TokenHash = HashToken(rawRefreshToken),
             SessionId = sessionId,
-            ExpiresAt = now.AddDays(_jwtOptions.RefreshTokenDays),
+            ExpiresAt = now.Add(refreshTokenLifetime),
+            RememberMe = rememberMe,
         };
         await refreshTokens.AddAsync(newRefreshToken, cancellationToken);
 
@@ -101,6 +105,7 @@ public class AuthService(
             accessTokenExpiresAt,
             rawRefreshToken,
             newRefreshToken.ExpiresAt,
+            rememberMe,
             new AuthenticatedUser(user.Id, user.Email, user.DisplayName, user.Role));
     }
 

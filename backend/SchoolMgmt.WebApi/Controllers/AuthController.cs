@@ -75,25 +75,27 @@ public class AuthController(AuthService authService, ITenantProvider tenantProvi
 
     private void SetAuthCookies(AuthResult result)
     {
-        Response.Cookies.Append(AccessTokenCookie, result.AccessToken, new CookieOptions
+        var accessOptions = new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Lax,
             Path = "/",
-            Expires = result.AccessTokenExpiresAt,
-        });
+        };
+        if (result.RememberMe) accessOptions.Expires = result.AccessTokenExpiresAt;
+        Response.Cookies.Append(AccessTokenCookie, result.AccessToken, accessOptions);
 
         // Scoped to /api/auth only — the refresh token never needs to be sent
         // on ordinary business-endpoint requests, unlike the access token.
-        Response.Cookies.Append(RefreshTokenCookie, result.RefreshToken, new CookieOptions
+        var refreshOptions = new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Lax,
             Path = "/api/auth",
-            Expires = result.RefreshTokenExpiresAt,
-        });
+        };
+        if (result.RememberMe) refreshOptions.Expires = result.RefreshTokenExpiresAt;
+        Response.Cookies.Append(RefreshTokenCookie, result.RefreshToken, refreshOptions);
     }
 
     private void ClearAuthCookies()

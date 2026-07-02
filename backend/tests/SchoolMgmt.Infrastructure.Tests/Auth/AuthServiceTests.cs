@@ -14,7 +14,7 @@ public class AuthServiceTests
         var users = new FakeUserRepository();
         var refreshTokens = new FakeRefreshTokenRepository(users);
         var clock = new FakeDateTimeProvider(now);
-        var options = Options.Create(new JwtOptions { AccessTokenMinutes = 15, RefreshTokenDays = 7 });
+        var options = Options.Create(new JwtOptions { AccessTokenMinutes = 15, RefreshTokenDays = 30, SessionRefreshTokenHours = 24 });
 
         var service = new AuthService(
             users,
@@ -126,11 +126,60 @@ public class AuthServiceTests
         var user = SeedUser(users);
         var login = await service.LoginAsync(new LoginRequest(user.Email, "correct-password"));
 
-        clock.UtcNow = now.AddDays(8); // past the 7-day RefreshTokenDays lifetime
+        clock.UtcNow = now.AddHours(25); // past the 24-hour SessionRefreshTokenHours lifetime (RememberMe defaults to false)
 
         var result = await service.RefreshAsync(login!.RefreshToken);
 
         Assert.Null(result);
         Assert.NotNull(refreshTokens.All.Single().RevokedAt);
+    }
+
+    [Fact]
+    public async Task LoginAsync_WithRememberMeFalse_UsesSessionHoursLifetime()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var (service, users, refreshTokens, _) = CreateService(now);
+        var user = SeedUser(users);
+
+        var result = await service.LoginAsync(new LoginRequest(user.Email, "correct-password", RememberMe: false));
+
+        Assert.NotNull(result);
+        Assert.False(result!.RememberMe);
+        var token = refreshTokens.All.Single();
+        Assert.False(token.RememberMe);
+        Assert.Equal(now.AddHours(24), token.ExpiresAt);
+    }
+
+    [Fact]
+    public async Task LoginAsync_WithRememberMeTrue_UsesRefreshTokenDaysLifetime()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var (service, users, refreshTokens, _) = CreateService(now);
+        var user = SeedUser(users);
+
+        var result = await service.LoginAsync(new LoginRequest(user.Email, "correct-password", RememberMe: true));
+
+        Assert.NotNull(result);
+        Assert.True(result!.RememberMe);
+        var token = refreshTokens.All.Single();
+        Assert.True(token.RememberMe);
+        Assert.Equal(now.AddDays(30), token.ExpiresAt);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_PreservesRememberMeFromOriginalToken()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var (service, users, refreshTokens, _) = CreateService(now);
+        var user = SeedUser(users);
+        var login = await service.LoginAsync(new LoginRequest(user.Email, "correct-password", RememberMe: true));
+
+        var refreshed = await service.RefreshAsync(login!.RefreshToken);
+
+        Assert.NotNull(refreshed);
+        Assert.True(refreshed!.RememberMe);
+        var newToken = refreshTokens.All.Single(t => t.RevokedAt == null);
+        Assert.True(newToken.RememberMe);
+        Assert.Equal(now.AddDays(30), newToken.ExpiresAt);
     }
 }

@@ -6,6 +6,14 @@ const api = axios.create({
   withCredentials: true,
 })
 
+// Separate instance with no interceptors — used only for the token
+// refresh call so a 401 from /auth/refresh doesn't re-enter the retry
+// logic and cause the queue to hang indefinitely.
+const refreshApi = axios.create({
+  baseURL: '/api',
+  withCredentials: true,
+})
+
 let isRefreshing = false
 let refreshQueue: Array<() => void> = []
 
@@ -28,14 +36,13 @@ api.interceptors.response.use(
     isRefreshing = true
 
     try {
-      await api.post('/auth/refresh')
+      await refreshApi.post('/auth/refresh')
       refreshQueue.forEach((cb) => cb())
       refreshQueue = []
       return api(originalRequest)
     } catch {
       refreshQueue = []
       useAuthStore.getState().clearUser()
-      window.location.href = '/login'
       return Promise.reject(error)
     } finally {
       isRefreshing = false

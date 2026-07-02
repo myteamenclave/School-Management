@@ -12,4 +12,5 @@ public class RefreshToken : BaseEntity, ITenantScoped
     public DateTimeOffset ExpiresAt { get; set; }
     public DateTimeOffset? RevokedAt { get; set; }
     public Guid? ReplacedByTokenId { get; set; }
+    public bool RememberMe { get; set; }
 }
