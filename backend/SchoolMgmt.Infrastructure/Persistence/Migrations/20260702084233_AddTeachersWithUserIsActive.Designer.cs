@@ -12,7 +12,7 @@ using SchoolMgmt.Infrastructure.Persistence;
 namespace SchoolMgmt.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260702044257_AddTeachersWithUserIsActive")]
+    [Migration("20260702084233_AddTeachersWithUserIsActive")]
     partial class AddTeachersWithUserIsActive
     {
         /// <inheritdoc />
