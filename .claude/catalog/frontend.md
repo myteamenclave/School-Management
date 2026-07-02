@@ -16,6 +16,12 @@
 |---|---|---|
 | `api` (default) | `axios.ts` | Shared Axios instance (`baseURL: '/api'`, `withCredentials: true`). Includes a 401-refresh interceptor with `isRefreshing` + `refreshQueue` guard to prevent concurrent refresh race on one-time-use tokens. On unrecoverable 401: clears auth store and redirects to `/login`. |
 | `authApi` | `auth.ts` | Thin wrappers: `login(email, password)`, `logout()`, `me()`. All go through the shared Axios instance — never `fetch` directly. |
+| `academicYearsApi` | `academicYears.ts` | Thin wrappers: `list()`, `create(body)`, `updateSemester(yearId, semId, body)`, `setCurrentYear(id)`, `setCurrentSemester(yearId, semId)`, `archive(id)`. |
+| `ACADEMIC_YEAR_KEYS` | `academicYears.ts` | TanStack Query key factory: `{ all: ['academic-years'] }`. All mutations invalidate this key on success. |
+| `AcademicYearDto` | `academicYears.ts` | `id`, `name`, `startDate`, `endDate`, `status` (`'Active' \| 'Archived'`), `isCurrent`, `semesters: SemesterDto[]` |
+| `SemesterDto` | `academicYears.ts` | `id`, `academicYearId`, `name`, `startDate`, `endDate`, `isCurrent` |
+| `CreateAcademicYearRequest` | `academicYears.ts` | `name`, `startDate`, `endDate` |
+| `UpdateSemesterRequest` | `academicYears.ts` | `name`, `startDate`, `endDate` |
 
 ## Hooks (`src/hooks/`)
 
@@ -49,7 +55,11 @@
 |---|---|---|
 | `LoginPage` | `auth/LoginPage.tsx` | Split-panel login UI matching the "Login Page - Final" design. Left: navy brand panel with marketing copy and feature items. Right: white panel with RHF+Zod form (email + password + remember-me checkbox). Shows `"Invalid email or password."` form-level error on 401; disables submit while in flight. On success: calls `setUser` then navigates to `/dashboard`. |
 | `DashboardPage` | `dashboard/DashboardPage.tsx` | Stub — "Welcome, {displayName}" heading. All future role-specific dashboards live here. |
-| `AdminRoutes` | `admin/index.tsx` | Stub `<Outlet>` for future `/admin/*` pages. |
+| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Currently routes `academic-years` → `AcademicYearsPage`. |
+| `AcademicYearsPage` | `admin/academic-years/AcademicYearsPage.tsx` | Admin page at `/admin/academic-years`. Fetches year list via TanStack Query; partitions into current / previous / archived sections; manages `createOpen`, `editingSemester`, `showArchived` state; owns all mutations (setCurrentYear, archive, setCurrentSemester); composes `AcademicYearCard`, `CreateYearModal`, `EditSemesterModal`. |
+| `AcademicYearCard` | `admin/academic-years/components/AcademicYearCard.tsx` | Renders one `AcademicYearDto` with its semesters. Highlights current year (`border-l-4` navy + `bg-primary/5`). Shows contextual buttons: Set as Current / Archive on active non-current years; Edit + Set Current on semester rows within current year. Archive requires `window.confirm`. Archived cards show "Archived — read only" and no buttons. |
+| `CreateYearModal` | `admin/academic-years/components/CreateYearModal.tsx` | shadcn Dialog + RHF + Zod for creating an academic year (`name`, `startDate`, `endDate`, cross-field `endDate > startDate`). On 409: shows "An academic year with this name already exists." toast. |
+| `EditSemesterModal` | `admin/academic-years/components/EditSemesterModal.tsx` | shadcn Dialog + RHF + Zod for editing a semester. Controlled by `semester: SemesterDto \| null` (null = closed). Pre-populates from prop via `useEffect` + `reset`. |
 | `TeacherRoutes` | `teacher/index.tsx` | Stub `<Outlet>` for future `/teacher/*` pages. |
 | `ParentRoutes` | `parent/index.tsx` | Stub `<Outlet>` for future `/parent/*` pages. |
 
@@ -62,6 +72,7 @@
 | `Input` | `ui/input.tsx` | shadcn-compatible text input. `h-11`, `border-border`, `rounded-lg`, focus ring via `focus-visible:ring-ring`. |
 | `Label` | `ui/label.tsx` | Radix `LabelPrimitive.Root` wrapper. Accessible — associates with input via `htmlFor`. |
 | `Form` / `FormField` / `FormItem` / `FormLabel` / `FormControl` / `FormMessage` | `ui/form.tsx` | shadcn-compatible RHF form primitives. `FormControl` uses Radix `Slot` to forward `id` and `aria-*` to the wrapped input. Not currently used in `LoginPage` (which uses `register` directly) — available for future multi-field forms. |
+| `Dialog` / `DialogContent` / `DialogHeader` / `DialogTitle` / `DialogFooter` / `DialogTrigger` / `DialogClose` | `ui/dialog.tsx` | shadcn-compatible Radix Dialog wrapper. `DialogContent` renders via a portal into `document.body`. Add `showCloseButton={false}` to hide the default X button. |
 
 ## Utilities (`src/lib/`)
 
@@ -73,7 +84,7 @@
 
 | File | Purpose |
 |---|---|
-| `App.tsx` | `QueryClientProvider` wraps `AppInner`. `AppInner` calls `useAuthInit()` then renders `RouterProvider`. Split so `useAuthInit` runs inside the Query context but above the router. |
+| `App.tsx` | `QueryClientProvider` wraps `AppInner`. `AppInner` calls `useAuthInit()` then renders `RouterProvider`. Also renders `<Toaster richColors position="top-right" />` from `sonner` for all mutations to fire toasts. |
 | `main.tsx` | `ReactDOM.createRoot` entry. Imports `index.css` (Tailwind v4 entry point). |
 | `index.css` | Tailwind v4 (`@import "tailwindcss"`), Google Fonts (Lexend + Source Sans 3), `@theme` block with all design tokens. |
 
@@ -86,3 +97,4 @@
 | `PublicOnlyRoute.test.tsx` | Spinner on loading, children on unauthenticated, redirect to `/dashboard` on authenticated |
 | `RoleRoute.test.tsx` | Children on role match, redirect to `/dashboard` on role mismatch or null user |
 | `LoginPage.test.tsx` | Renders fields; calls `authApi.login` on submit; shows `"Invalid email or password."` on 401; disables button while in flight. `authApi` is mocked with `vi.mock`. |
+| `academic-years/__tests__/AcademicYearsPage.test.tsx` | 8 tests covering: empty state, current year highlighting, Set-as-Current mutation, Archive confirm guard, archived toggle, create modal flow, edit modal pre-population, Set-Current-Semester visibility. `academicYearsApi` mocked via `vi.mock`. |
