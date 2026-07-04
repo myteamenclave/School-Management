@@ -16,7 +16,7 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
   - [x] Frontend (login page, token refresh, route guards)
 - Academic year / term configuration — [idea doc](ideas/01-academic-year-term-configuration.md)
   - [x] Backend
-  - [ ] Frontend
+  - [x] Frontend
 - Class / section structure — [idea doc](ideas/02-class-section-structure.md)
   - [x] Backend
   - [ ] Frontend

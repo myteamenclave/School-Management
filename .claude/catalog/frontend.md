@@ -1,4 +1,4 @@
-<!-- Last verified: 2026-07-01. Update this file whenever a new public type/function/component is added or removed from the frontend. Check here before adding new code — don't duplicate something that already exists. -->
+<!-- Last verified: 2026-07-02. Update this file whenever a new public type/function/component is added or removed from the frontend. Check here before adding new code — don't duplicate something that already exists. -->
 
 # Frontend Catalog
 
@@ -22,6 +22,14 @@
 | `SemesterDto` | `academicYears.ts` | `id`, `academicYearId`, `name`, `startDate`, `endDate`, `isCurrent` |
 | `CreateAcademicYearRequest` | `academicYears.ts` | `name`, `startDate`, `endDate` |
 | `UpdateSemesterRequest` | `academicYears.ts` | `name`, `startDate`, `endDate` |
+| `gradesApi` | `grades.ts` | Thin wrappers: `list()`, `create(body)`, `update(id, body)`, `delete(id)`, `addSection(gradeId, body)`, `updateSection(gradeId, sectionId, body)`, `deleteSection(gradeId, sectionId)`. |
+| `GRADE_KEYS` | `grades.ts` | TanStack Query key factory: `{ all: ['grades'] }`. All grade/section mutations invalidate this key on success. |
+| `GradeDto` | `grades.ts` | `id`, `name`, `displayOrder`, `sections: SectionDto[]` |
+| `SectionDto` | `grades.ts` | `id`, `gradeId`, `name` |
+| `CreateGradeRequest` | `grades.ts` | `name`, `displayOrder` |
+| `UpdateGradeRequest` | `grades.ts` | `name`, `displayOrder` |
+| `CreateSectionRequest` | `grades.ts` | `name` |
+| `UpdateSectionRequest` | `grades.ts` | `name` |
 
 ## Hooks (`src/hooks/`)
 
@@ -55,8 +63,13 @@
 |---|---|---|
 | `LoginPage` | `auth/LoginPage.tsx` | Split-panel login UI matching the "Login Page - Final" design. Left: navy brand panel with marketing copy and feature items. Right: white panel with RHF+Zod form (email + password + remember-me checkbox). Shows `"Invalid email or password."` form-level error on 401; disables submit while in flight. On success: calls `setUser` then navigates to `/dashboard`. |
 | `DashboardPage` | `dashboard/DashboardPage.tsx` | Stub — "Welcome, {displayName}" heading. All future role-specific dashboards live here. |
-| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Currently routes `academic-years` → `AcademicYearsPage`. |
+| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years` → `AcademicYearsPage`, `grades` → `GradesPage`. |
 | `AcademicYearsPage` | `admin/academic-years/AcademicYearsPage.tsx` | Admin page at `/admin/academic-years`. Fetches year list via TanStack Query; partitions into current / previous / archived sections; manages `createOpen`, `editingSemester`, `showArchived` state; owns all mutations (setCurrentYear, archive, setCurrentSemester); composes `AcademicYearCard`, `CreateYearModal`, `EditSemesterModal`. |
+| `GradesPage` | `admin/grades/GradesPage.tsx` | Admin page at `/admin/grades`. Fetches grade list via TanStack Query; manages `createOpen`, `editingGrade`, `expandedIds` (accordion) state; owns grade delete mutation; auto-expands accordion for newly created grades via `onCreated` callback; composes `GradeAccordionItem`, `CreateGradeModal`, `EditGradeModal`. |
+| `GradeAccordionItem` | `admin/grades/components/GradeAccordionItem.tsx` | shadcn Accordion card for one grade. Collapsed header shows grade name + section count Badge. Expanded body shows `SectionChip` row, inline add-section form (input + save/cancel), and Edit Grade / Delete Grade buttons. Delete Grade is disabled (with Tooltip) when `grade.sections.length > 0`. Owns `addSectionMutation`. |
+| `SectionChip` | `admin/grades/components/SectionChip.tsx` | Self-contained chip that toggles between display and inline-edit mode. Display: styled button showing section name. Edit: inline input + save/cancel + delete (with `window.confirm`). Owns `renameMutation` and `deleteMutation` locally. Escape key cancels edit; Enter key saves. |
+| `CreateGradeModal` | `admin/grades/components/CreateGradeModal.tsx` | shadcn Dialog + RHF + Zod for creating a grade (`name`, `displayOrder: number ≥ 0`). `onCreated(id)` callback used by page to auto-expand the new grade's accordion. 409 → "A grade with this name already exists." toast. |
+| `EditGradeModal` | `admin/grades/components/EditGradeModal.tsx` | shadcn Dialog + RHF + Zod for editing a grade. Controlled by `grade: GradeDto \| null` (null = closed). Pre-populates via `useEffect` + `reset` on prop change. |
 | `AcademicYearCard` | `admin/academic-years/components/AcademicYearCard.tsx` | Renders one `AcademicYearDto` with its semesters. Highlights current year (`border-l-4` navy + `bg-primary/5`). Shows contextual buttons: Set as Current / Archive on active non-current years; Edit + Set Current on semester rows within current year. Archive requires `window.confirm`. Archived cards show "Archived — read only" and no buttons. |
 | `CreateYearModal` | `admin/academic-years/components/CreateYearModal.tsx` | shadcn Dialog + RHF + Zod for creating an academic year (`name`, `startDate`, `endDate`, cross-field `endDate > startDate`). On 409: shows "An academic year with this name already exists." toast. |
 | `EditSemesterModal` | `admin/academic-years/components/EditSemesterModal.tsx` | shadcn Dialog + RHF + Zod for editing a semester. Controlled by `semester: SemesterDto \| null` (null = closed). Pre-populates from prop via `useEffect` + `reset`. |
@@ -73,6 +86,9 @@
 | `Label` | `ui/label.tsx` | Radix `LabelPrimitive.Root` wrapper. Accessible — associates with input via `htmlFor`. |
 | `Form` / `FormField` / `FormItem` / `FormLabel` / `FormControl` / `FormMessage` | `ui/form.tsx` | shadcn-compatible RHF form primitives. `FormControl` uses Radix `Slot` to forward `id` and `aria-*` to the wrapped input. Not currently used in `LoginPage` (which uses `register` directly) — available for future multi-field forms. |
 | `Dialog` / `DialogContent` / `DialogHeader` / `DialogTitle` / `DialogFooter` / `DialogTrigger` / `DialogClose` | `ui/dialog.tsx` | shadcn-compatible Radix Dialog wrapper. `DialogContent` renders via a portal into `document.body`. Add `showCloseButton={false}` to hide the default X button. |
+| `Accordion` / `AccordionItem` / `AccordionTrigger` / `AccordionContent` | `ui/accordion.tsx` | shadcn Radix Accordion. Supports `type="multiple"` (several items open simultaneously) and `type="single" collapsible`. Use controlled `value` + `onValueChange` for programmatic expand (e.g. auto-open after create). |
+| `Badge` | `ui/badge.tsx` | shadcn Badge for count/status labels. Variants: `default`, `secondary`, `destructive`, `outline`. |
+| `Tooltip` / `TooltipContent` / `TooltipTrigger` / `TooltipProvider` | `ui/tooltip.tsx` | shadcn Radix Tooltip. Wrap `TooltipProvider` at the usage site (or app root). Wrap a disabled `<Button>` in a `<span>` before `TooltipTrigger` — disabled elements don't emit pointer events and won't trigger the tooltip otherwise. |
 
 ## Utilities (`src/lib/`)
 
@@ -98,3 +114,6 @@
 | `RoleRoute.test.tsx` | Children on role match, redirect to `/dashboard` on role mismatch or null user |
 | `LoginPage.test.tsx` | Renders fields; calls `authApi.login` on submit; shows `"Invalid email or password."` on 401; disables button while in flight. `authApi` is mocked with `vi.mock`. |
 | `academic-years/__tests__/AcademicYearsPage.test.tsx` | 8 tests covering: empty state, current year highlighting, Set-as-Current mutation, Archive confirm guard, archived toggle, create modal flow, edit modal pre-population, Set-Current-Semester visibility. `academicYearsApi` mocked via `vi.mock`. |
+| `grades/__tests__/GradesPage.test.tsx` | Empty state; grade list with section counts; accordion expand; disabled delete when grade has sections; enabled delete when empty; create modal opens. `gradesApi` mocked via `vi.mock`. |
+| `grades/__tests__/CreateGradeModal.test.tsx` | Correct payload on submit; 409 → "already exists" toast; submit disabled while pending. |
+| `grades/__tests__/SectionChip.test.tsx` | Renders section name; click enters edit mode; Escape cancels; save calls `updateSection`; delete with confirm calls `deleteSection`. |
