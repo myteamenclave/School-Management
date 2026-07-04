@@ -46,9 +46,9 @@ public class StudentService(IStudentRepository repository, IUnitOfWork unitOfWor
     }
 
     public async Task<PagedResult<StudentSummaryDto>> GetStudentsAsync(
-        EnrollmentStatus? status, int page, int pageSize, CancellationToken ct = default)
+        EnrollmentStatus? status, string? search, int page, int pageSize, CancellationToken ct = default)
     {
-        var (items, total) = await repository.GetPagedAsync(status, page, pageSize, ct);
+        var (items, total) = await repository.GetPagedAsync(status, search, page, pageSize, ct);
         return new PagedResult<StudentSummaryDto>(items.Select(ToSummaryDto).ToList(), total, page, pageSize);
     }
 

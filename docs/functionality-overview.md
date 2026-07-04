@@ -19,15 +19,15 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
   - [x] Frontend
 - Class / section structure — [idea doc](ideas/02-class-section-structure.md)
   - [x] Backend
-  - [ ] Frontend
+  - [x] Frontend
 - Docker + CI/CD
   - [x] Docker (backend Dockerfile + layered docker-compose)
   - [ ] CI/CD pipeline (GitHub Actions)
 
 ## Admin / Registrar
-- Student CRUD — [idea doc](ideas/03-student-crud.md)
+- Student CRUD — [idea doc](ideas/03-student-crud.md) · [frontend idea doc](ideas/05-student-crud-frontend.md)
   - [x] Backend
-  - [ ] Frontend
+  - [~] Frontend
 - Bulk student/teacher import (CSV)
   - [ ] Backend
   - [ ] Frontend

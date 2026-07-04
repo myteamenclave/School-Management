@@ -30,6 +30,14 @@
 | `UpdateGradeRequest` | `grades.ts` | `name`, `displayOrder` |
 | `CreateSectionRequest` | `grades.ts` | `name` |
 | `UpdateSectionRequest` | `grades.ts` | `name` |
+| `studentsApi` | `students.ts` | Thin wrappers: `list(params)`, `getById(id)`, `create(body)`, `update(id, body)`. |
+| `STUDENT_KEYS` | `students.ts` | TanStack Query key factory: `{ list(params), detail(id) }`. All mutations invalidate `['students']` prefix key. |
+| `StudentSummaryDto` | `students.ts` | List-view shape: `id`, `studentCode`, `firstName`, `lastName`, `dateOfBirth`, `gender`, `enrollmentDate`, `enrollmentStatus` (all strings) |
+| `StudentDto` | `students.ts` | Full shape extending `StudentSummaryDto`: adds `guardianName`, `guardianPhone`, `guardianEmail` (nullable), `createdAt`, `updatedAt`. |
+| `PagedResult<T>` | `students.ts` | Generic paged response: `items: T[]`, `totalCount`, `page`, `pageSize`. Defined here for the students feature; move to `src/types/api.ts` when a second consumer appears. |
+| `CreateStudentRequest` | `students.ts` | `firstName`, `lastName`, `dateOfBirth`, `gender`, `enrollmentDate`, optional guardian fields. |
+| `UpdateStudentRequest` | `students.ts` | Extends `CreateStudentRequest` with `enrollmentStatus`. `studentCode` is NEVER included. |
+| `ListStudentsParams` | `students.ts` | Query params for `list()`: `status`, `search`, `page`, `pageSize`. |
 
 ## Hooks (`src/hooks/`)
 
@@ -55,7 +63,7 @@
 
 | Component | Purpose |
 |---|---|
-| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role` (currently only Dashboard for all roles). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
+| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role`. Nav items: Dashboard (all roles), Academic Years, Grades & Sections, Students (all Admin-only). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
 
 ## Pages (`src/pages/`)
 
@@ -63,13 +71,16 @@
 |---|---|---|
 | `LoginPage` | `auth/LoginPage.tsx` | Split-panel login UI matching the "Login Page - Final" design. Left: navy brand panel with marketing copy and feature items. Right: white panel with RHF+Zod form (email + password + remember-me checkbox). Shows `"Invalid email or password."` form-level error on 401; disables submit while in flight. On success: calls `setUser` then navigates to `/dashboard`. |
 | `DashboardPage` | `dashboard/DashboardPage.tsx` | Stub — "Welcome, {displayName}" heading. All future role-specific dashboards live here. |
-| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years` → `AcademicYearsPage`, `grades` → `GradesPage`. |
+| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years` → `AcademicYearsPage`, `grades` → `GradesPage`, `students` → `StudentsPage`. |
 | `AcademicYearsPage` | `admin/academic-years/AcademicYearsPage.tsx` | Admin page at `/admin/academic-years`. Fetches year list via TanStack Query; partitions into current / previous / archived sections; manages `createOpen`, `editingSemester`, `showArchived` state; owns all mutations (setCurrentYear, archive, setCurrentSemester); composes `AcademicYearCard`, `CreateYearModal`, `EditSemesterModal`. |
 | `GradesPage` | `admin/grades/GradesPage.tsx` | Admin page at `/admin/grades`. Fetches grade list via TanStack Query; manages `createOpen`, `editingGrade`, `expandedIds` (accordion) state; owns grade delete mutation; auto-expands accordion for newly created grades via `onCreated` callback; composes `GradeAccordionItem`, `CreateGradeModal`, `EditGradeModal`. |
 | `GradeAccordionItem` | `admin/grades/components/GradeAccordionItem.tsx` | shadcn Accordion card for one grade. Collapsed header shows grade name + section count Badge. Expanded body shows `SectionChip` row, inline add-section form (input + save/cancel), and Edit Grade / Delete Grade buttons. Delete Grade is disabled (with Tooltip) when `grade.sections.length > 0`. Owns `addSectionMutation`. |
 | `SectionChip` | `admin/grades/components/SectionChip.tsx` | Self-contained chip that toggles between display and inline-edit mode. Display: styled button showing section name. Edit: inline input + save/cancel + delete (with `window.confirm`). Owns `renameMutation` and `deleteMutation` locally. Escape key cancels edit; Enter key saves. |
 | `CreateGradeModal` | `admin/grades/components/CreateGradeModal.tsx` | shadcn Dialog + RHF + Zod for creating a grade (`name`, `displayOrder: number ≥ 0`). `onCreated(id)` callback used by page to auto-expand the new grade's accordion. 409 → "A grade with this name already exists." toast. |
 | `EditGradeModal` | `admin/grades/components/EditGradeModal.tsx` | shadcn Dialog + RHF + Zod for editing a grade. Controlled by `grade: GradeDto \| null` (null = closed). Pre-populates via `useEffect` + `reset` on prop change. |
+| `StudentsPage` | `admin/students/StudentsPage.tsx` | Admin page at `/admin/students`. Server-paginated table with enrollment status `Tabs` filter, debounced (300 ms) search input, Prev/Next pagination (`keepPreviousData`). State: `tab`, `search`, `debouncedSearch`, `page`, `createOpen`, `editingId`. Composes `CreateStudentModal` + `EditStudentModal`. Inline `StatusBadge` (color-coded by status). |
+| `CreateStudentModal` | `admin/students/components/CreateStudentModal.tsx` | shadcn Dialog + RHF + Zod for creating a student. Two-column layout: First/Last, DOB/Gender, Enrollment Date, guardian section (optional). Gender uses shadcn `Select`. Exports `createSchema` (used by `EditStudentModal`). Empty optional string fields are stripped to `undefined` before POST. |
+| `EditStudentModal` | `admin/students/components/EditStudentModal.tsx` | shadcn Dialog + RHF + Zod for editing a student. Controlled by `studentId: string \| null`. Fetches full `StudentDto` on open (`enabled: studentId !== null`). Shows spinner while loading. Displays `studentCode` as read-only text — never in payload. Extends `createSchema` with `enrollmentStatus` Select. |
 | `AcademicYearCard` | `admin/academic-years/components/AcademicYearCard.tsx` | Renders one `AcademicYearDto` with its semesters. Highlights current year (`border-l-4` navy + `bg-primary/5`). Shows contextual buttons: Set as Current / Archive on active non-current years; Edit + Set Current on semester rows within current year. Archive requires `window.confirm`. Archived cards show "Archived — read only" and no buttons. |
 | `CreateYearModal` | `admin/academic-years/components/CreateYearModal.tsx` | shadcn Dialog + RHF + Zod for creating an academic year (`name`, `startDate`, `endDate`, cross-field `endDate > startDate`). On 409: shows "An academic year with this name already exists." toast. |
 | `EditSemesterModal` | `admin/academic-years/components/EditSemesterModal.tsx` | shadcn Dialog + RHF + Zod for editing a semester. Controlled by `semester: SemesterDto \| null` (null = closed). Pre-populates from prop via `useEffect` + `reset`. |
@@ -89,6 +100,9 @@
 | `Accordion` / `AccordionItem` / `AccordionTrigger` / `AccordionContent` | `ui/accordion.tsx` | shadcn Radix Accordion. Supports `type="multiple"` (several items open simultaneously) and `type="single" collapsible`. Use controlled `value` + `onValueChange` for programmatic expand (e.g. auto-open after create). |
 | `Badge` | `ui/badge.tsx` | shadcn Badge for count/status labels. Variants: `default`, `secondary`, `destructive`, `outline`. |
 | `Tooltip` / `TooltipContent` / `TooltipTrigger` / `TooltipProvider` | `ui/tooltip.tsx` | shadcn Radix Tooltip. Wrap `TooltipProvider` at the usage site (or app root). Wrap a disabled `<Button>` in a `<span>` before `TooltipTrigger` — disabled elements don't emit pointer events and won't trigger the tooltip otherwise. |
+| `Table` / `TableHeader` / `TableBody` / `TableRow` / `TableHead` / `TableCell` / `TableCaption` / `TableFooter` | `ui/table.tsx` | shadcn-compatible table primitives. `Table` wraps in `overflow-x-auto` container. |
+| `Select` / `SelectTrigger` / `SelectValue` / `SelectContent` / `SelectItem` / `SelectGroup` / `SelectLabel` / `SelectSeparator` / `SelectScrollUpButton` / `SelectScrollDownButton` | `ui/select.tsx` | shadcn Radix Select. Use with `<Controller>` from RHF. In tests, mock the module with a native `<select>`+`<option>` to avoid Radix portal/jsdom issues with Dialog scroll-lock. |
+| `Tabs` / `TabsList` / `TabsTrigger` / `TabsContent` | `ui/tabs.tsx` | shadcn Radix Tabs. Use `value`+`onValueChange` for controlled tabs. |
 
 ## Utilities (`src/lib/`)
 

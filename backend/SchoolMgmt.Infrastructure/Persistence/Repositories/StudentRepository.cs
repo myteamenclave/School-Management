@@ -9,12 +9,20 @@ internal sealed class StudentRepository(AppDbContext context)
     : Repository<Student>(context), IStudentRepository
 {
     public async Task<(List<Student> Items, int TotalCount)> GetPagedAsync(
-        EnrollmentStatus? status, int page, int pageSize, CancellationToken ct = default)
+        EnrollmentStatus? status, string? search, int page, int pageSize, CancellationToken ct = default)
     {
         var query = DbSet.AsQueryable();
         query = status.HasValue
             ? query.Where(s => s.EnrollmentStatus == status.Value)
             : query.Where(s => s.EnrollmentStatus == EnrollmentStatus.Active);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var pattern = $"%{search.Trim()}%";
+            query = query.Where(s =>
+                EF.Functions.ILike(s.FirstName + " " + s.LastName, pattern) ||
+                EF.Functions.ILike(s.StudentCode, pattern));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query

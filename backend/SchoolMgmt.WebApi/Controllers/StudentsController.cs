@@ -21,6 +21,7 @@ public class StudentsController(StudentService service) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? status,
+        [FromQuery] string? search,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
@@ -30,7 +31,7 @@ public class StudentsController(StudentService service) : ControllerBase
             parsedStatus = s;
 
         pageSize = Math.Min(pageSize, 100);
-        var result = await service.GetStudentsAsync(parsedStatus, page, pageSize, ct);
+        var result = await service.GetStudentsAsync(parsedStatus, search, page, pageSize, ct);
         return Ok(result);
     }
 

@@ -21,6 +21,7 @@ Canonical record of *why* the project is shaped the way it is. Read these to und
 | [docs/ideas/school-management-system.md](docs/ideas/school-management-system.md) | Source idea doc — problem statement, recommended direction, key assumptions, MVP scope, what's deliberately not being built |
 | [docs/ideas/01-academic-year-term-configuration.md](docs/ideas/01-academic-year-term-configuration.md) | Academic year / term configuration — two-level calendar structure, semester auto-scaffold, domain guard enforcement |
 | [docs/ideas/02-class-section-structure.md](docs/ideas/02-class-section-structure.md) | Class / section structure — persistent Grade + Section hierarchy, Admin CRUD, delete guards |
+| [docs/ideas/05-student-crud-frontend.md](docs/ideas/05-student-crud-frontend.md) | Student CRUD frontend — paginated table, status tabs, debounced server-side search, modal create/edit |
 | [docs/functionality-overview.md](docs/functionality-overview.md) | Master goal list / checklist of every functionality across all modules — the index of what's left to build |
 | [docs/design-system.md](docs/design-system.md) | Color palette, typography, design vibe — source of truth before syncing to Claude Design |
 
@@ -37,6 +38,7 @@ Concrete technical plans for *how* a feature is actually implemented. **Every fe
 | [specs/04-implement-class-section-structure.md](specs/04-implement-class-section-structure.md) | Grade + Section entities, per-grade section CRUD, `EnsureNoSections` delete guard, Admin CRUD API | Implemented |
 | [specs/05-implement-student-crud.md](specs/05-implement-student-crud.md) | Student entity, `StudentCode` auto-generation (YYYY-NNNNNN), Admin CRUD, inline guardian fields, `EnrollmentStatus` lifecycle, no hard delete | Implemented |
 | [specs/02-B-scaffold-frontend-and-auth.md](specs/02-B-scaffold-frontend-and-auth.md) | React 19 + Vite scaffold, Zustand auth store, Axios 401-refresh interceptor, login page, app shell, role-aware route guards | Implemented |
+| [specs/06-B-implement-student-crud-frontend.md](specs/06-B-implement-student-crud-frontend.md) | Student CRUD frontend — paginated table, status tabs, debounced server-side search (`?search=` ILIKE backend addition), modal create/edit, Prev/Next pagination | In progress |
 
 ### Coding Rules — `.claude/rules/`
 Enforceable coding rules an agent must follow while writing code, not background context.
