@@ -39,6 +39,7 @@ Concrete technical plans for *how* a feature is actually implemented. **Every fe
 | [specs/05-implement-student-crud.md](specs/05-implement-student-crud.md) | Student entity, `StudentCode` auto-generation (YYYY-NNNNNN), Admin CRUD, inline guardian fields, `EnrollmentStatus` lifecycle, no hard delete | Implemented |
 | [specs/02-B-scaffold-frontend-and-auth.md](specs/02-B-scaffold-frontend-and-auth.md) | React 19 + Vite scaffold, Zustand auth store, Axios 401-refresh interceptor, login page, app shell, role-aware route guards | Implemented |
 | [specs/06-B-implement-student-crud-frontend.md](specs/06-B-implement-student-crud-frontend.md) | Student CRUD frontend — paginated table, status tabs, debounced server-side search (`?search=` ILIKE backend addition), modal create/edit, Prev/Next pagination | In progress |
+| [specs/07-B-implement-teacher-crud-frontend.md](specs/07-B-implement-teacher-crud-frontend.md) | Teacher CRUD frontend — paginated table, Active/Inactive/All tabs, debounced search (`?search=` ILIKE backend addition), modal create/edit, IsActive toggle | Implemented |
 
 ### Coding Rules — `.claude/rules/`
 Enforceable coding rules an agent must follow while writing code, not background context.

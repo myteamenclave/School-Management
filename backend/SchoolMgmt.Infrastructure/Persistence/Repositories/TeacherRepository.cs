@@ -8,12 +8,21 @@ internal sealed class TeacherRepository(AppDbContext context)
     : Repository<Teacher>(context), ITeacherRepository
 {
     public async Task<(List<Teacher> Items, int TotalCount)> GetPagedAsync(
-        bool? isActive, int page, int pageSize, CancellationToken ct = default)
+        bool? isActive, string? search, int page, int pageSize, CancellationToken ct = default)
     {
         var query = DbSet.Include(t => t.User).AsQueryable();
-        query = isActive.HasValue
-            ? query.Where(t => t.IsActive == isActive.Value)
-            : query.Where(t => t.IsActive);
+
+        if (isActive.HasValue)
+            query = query.Where(t => t.IsActive == isActive.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var pattern = $"%{search.Trim()}%";
+            query = query.Where(t =>
+                EF.Functions.ILike(t.FirstName + " " + t.LastName, pattern) ||
+                EF.Functions.ILike(t.TeacherCode, pattern) ||
+                EF.Functions.ILike(t.User.Email, pattern));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query

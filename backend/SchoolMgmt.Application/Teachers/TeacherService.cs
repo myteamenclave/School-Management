@@ -74,9 +74,9 @@ public class TeacherService(
     }
 
     public async Task<PagedResult<TeacherSummaryDto>> GetTeachersAsync(
-        bool? isActive, int page, int pageSize, CancellationToken ct = default)
+        bool? isActive, string? search, int page, int pageSize, CancellationToken ct = default)
     {
-        var (items, total) = await repository.GetPagedAsync(isActive, page, pageSize, ct);
+        var (items, total) = await repository.GetPagedAsync(isActive, search, page, pageSize, ct);
         return new PagedResult<TeacherSummaryDto>(items.Select(ToSummaryDto).ToList(), total, page, pageSize);
     }
 

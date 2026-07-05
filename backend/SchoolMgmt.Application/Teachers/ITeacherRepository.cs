@@ -6,7 +6,7 @@ namespace SchoolMgmt.Application.Teachers;
 public interface ITeacherRepository : IRepository<Teacher>
 {
     Task<(List<Teacher> Items, int TotalCount)> GetPagedAsync(
-        bool? isActive, int page, int pageSize, CancellationToken ct = default);
+        bool? isActive, string? search, int page, int pageSize, CancellationToken ct = default);
 
     Task<Teacher?> GetByIdWithUserAsync(Guid id, CancellationToken ct = default);
 

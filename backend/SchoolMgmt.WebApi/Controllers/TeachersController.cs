@@ -20,12 +20,13 @@ public class TeachersController(TeacherService service) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] bool? isActive,
+        [FromQuery] string? search = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
         pageSize = Math.Min(pageSize, 100);
-        var result = await service.GetTeachersAsync(isActive, page, pageSize, ct);
+        var result = await service.GetTeachersAsync(isActive, search, page, pageSize, ct);
         return Ok(result);
     }
 

@@ -27,7 +27,7 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
 ## Admin / Registrar
 - Student CRUD — [idea doc](ideas/03-student-crud.md) · [frontend idea doc](ideas/05-student-crud-frontend.md)
   - [x] Backend
-  - [~] Frontend
+  - [x] Frontend
 - Bulk student/teacher import (CSV)
   - [ ] Backend
   - [ ] Frontend

@@ -38,6 +38,13 @@
 | `CreateStudentRequest` | `students.ts` | `firstName`, `lastName`, `dateOfBirth`, `gender`, `enrollmentDate`, optional guardian fields. |
 | `UpdateStudentRequest` | `students.ts` | Extends `CreateStudentRequest` with `enrollmentStatus`. `studentCode` is NEVER included. |
 | `ListStudentsParams` | `students.ts` | Query params for `list()`: `status`, `search`, `page`, `pageSize`. |
+| `teachersApi` | `teachers.ts` | Thin wrappers: `list(params)`, `getById(id)`, `create(body)`, `update(id, body)`. `list` omits `?isActive=` when `params.isActive` is null (All tab). |
+| `TEACHER_KEYS` | `teachers.ts` | TanStack Query key factory: `{ list(params), detail(id) }`. All mutations invalidate `['teachers']` prefix key. |
+| `TeacherSummaryDto` | `teachers.ts` | List-view shape: `id`, `teacherCode`, `firstName`, `lastName`, `phone` (nullable), `joiningDate`, `isActive` (boolean), `email`. |
+| `TeacherDto` | `teachers.ts` | Full shape extending `TeacherSummaryDto`: adds `userId`, `createdAt`, `updatedAt`. |
+| `CreateTeacherRequest` | `teachers.ts` | `email`, `password`, `firstName`, `lastName`, `joiningDate`, optional `phone`. Creates a User + Teacher atomically. |
+| `UpdateTeacherRequest` | `teachers.ts` | `firstName`, `lastName`, `joiningDate`, optional `phone`, `isActive`. Email/password NOT included — auth concern, out of scope. |
+| `ListTeachersParams` | `teachers.ts` | Query params for `list()`: `isActive: boolean \| null` (null = all), `search`, `page`, `pageSize`. |
 
 ## Hooks (`src/hooks/`)
 
@@ -63,7 +70,7 @@
 
 | Component | Purpose |
 |---|---|
-| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role`. Nav items: Dashboard (all roles), Academic Years, Grades & Sections, Students (all Admin-only). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
+| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role`. Nav items: Dashboard (all roles), Academic Years, Grades & Sections, Students, Teachers (all Admin-only). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
 
 ## Pages (`src/pages/`)
 
@@ -71,7 +78,7 @@
 |---|---|---|
 | `LoginPage` | `auth/LoginPage.tsx` | Split-panel login UI matching the "Login Page - Final" design. Left: navy brand panel with marketing copy and feature items. Right: white panel with RHF+Zod form (email + password + remember-me checkbox). Shows `"Invalid email or password."` form-level error on 401; disables submit while in flight. On success: calls `setUser` then navigates to `/dashboard`. |
 | `DashboardPage` | `dashboard/DashboardPage.tsx` | Stub — "Welcome, {displayName}" heading. All future role-specific dashboards live here. |
-| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years` → `AcademicYearsPage`, `grades` → `GradesPage`, `students` → `StudentsPage`. |
+| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years` → `AcademicYearsPage`, `grades` → `GradesPage`, `students` → `StudentsPage`, `teachers` → `TeachersPage`. |
 | `AcademicYearsPage` | `admin/academic-years/AcademicYearsPage.tsx` | Admin page at `/admin/academic-years`. Fetches year list via TanStack Query; partitions into current / previous / archived sections; manages `createOpen`, `editingSemester`, `showArchived` state; owns all mutations (setCurrentYear, archive, setCurrentSemester); composes `AcademicYearCard`, `CreateYearModal`, `EditSemesterModal`. |
 | `GradesPage` | `admin/grades/GradesPage.tsx` | Admin page at `/admin/grades`. Fetches grade list via TanStack Query; manages `createOpen`, `editingGrade`, `expandedIds` (accordion) state; owns grade delete mutation; auto-expands accordion for newly created grades via `onCreated` callback; composes `GradeAccordionItem`, `CreateGradeModal`, `EditGradeModal`. |
 | `GradeAccordionItem` | `admin/grades/components/GradeAccordionItem.tsx` | shadcn Accordion card for one grade. Collapsed header shows grade name + section count Badge. Expanded body shows `SectionChip` row, inline add-section form (input + save/cancel), and Edit Grade / Delete Grade buttons. Delete Grade is disabled (with Tooltip) when `grade.sections.length > 0`. Owns `addSectionMutation`. |
@@ -81,6 +88,9 @@
 | `StudentsPage` | `admin/students/StudentsPage.tsx` | Admin page at `/admin/students`. Server-paginated table with enrollment status `Tabs` filter, debounced (300 ms) search input, Prev/Next pagination (`keepPreviousData`). State: `tab`, `search`, `debouncedSearch`, `page`, `createOpen`, `editingId`. Composes `CreateStudentModal` + `EditStudentModal`. Inline `StatusBadge` (color-coded by status). |
 | `CreateStudentModal` | `admin/students/components/CreateStudentModal.tsx` | shadcn Dialog + RHF + Zod for creating a student. Two-column layout: First/Last, DOB/Gender, Enrollment Date, guardian section (optional). Gender uses shadcn `Select`. Exports `createSchema` (used by `EditStudentModal`). Empty optional string fields are stripped to `undefined` before POST. |
 | `EditStudentModal` | `admin/students/components/EditStudentModal.tsx` | shadcn Dialog + RHF + Zod for editing a student. Controlled by `studentId: string \| null`. Fetches full `StudentDto` on open (`enabled: studentId !== null`). Shows spinner while loading. Displays `studentCode` as read-only text — never in payload. Extends `createSchema` with `enrollmentStatus` Select. |
+| `TeachersPage` | `admin/teachers/TeachersPage.tsx` | Admin page at `/admin/teachers`. Server-paginated table with Active/Inactive/All `Tabs` filter (maps to `?isActive=true/false/omit`), debounced (300 ms) search, Prev/Next pagination (`keepPreviousData`). State: `tab`, `search`, `debouncedSearch`, `page`, `createOpen`, `editingId`. Inline `StatusBadge` (green=active, zinc=inactive). Composes `CreateTeacherModal` + `EditTeacherModal`. |
+| `CreateTeacherModal` | `admin/teachers/components/CreateTeacherModal.tsx` | shadcn Dialog + RHF + Zod for creating a teacher (also creates their User account). Fields: firstName, lastName, email, password (≥8 chars), joiningDate, phone (optional). Email input is `type="text"` — Zod validates email format (avoids jsdom HTML5 blocking). Exports `createTeacherSchema`. |
+| `EditTeacherModal` | `admin/teachers/components/EditTeacherModal.tsx` | shadcn Dialog + RHF + Zod for editing a teacher. Controlled by `teacherId: string \| null`. Fetches full `TeacherDto` on open. Displays `teacherCode` and `email` as read-only text — neither in PUT payload. `isActive` uses native `<input type="checkbox">` via `Controller`. Deactivating also disables the teacher's login (backend syncs `User.IsActive`). |
 | `AcademicYearCard` | `admin/academic-years/components/AcademicYearCard.tsx` | Renders one `AcademicYearDto` with its semesters. Highlights current year (`border-l-4` navy + `bg-primary/5`). Shows contextual buttons: Set as Current / Archive on active non-current years; Edit + Set Current on semester rows within current year. Archive requires `window.confirm`. Archived cards show "Archived — read only" and no buttons. |
 | `CreateYearModal` | `admin/academic-years/components/CreateYearModal.tsx` | shadcn Dialog + RHF + Zod for creating an academic year (`name`, `startDate`, `endDate`, cross-field `endDate > startDate`). On 409: shows "An academic year with this name already exists." toast. |
 | `EditSemesterModal` | `admin/academic-years/components/EditSemesterModal.tsx` | shadcn Dialog + RHF + Zod for editing a semester. Controlled by `semester: SemesterDto \| null` (null = closed). Pre-populates from prop via `useEffect` + `reset`. |
@@ -131,3 +141,6 @@
 | `grades/__tests__/GradesPage.test.tsx` | Empty state; grade list with section counts; accordion expand; disabled delete when grade has sections; enabled delete when empty; create modal opens. `gradesApi` mocked via `vi.mock`. |
 | `grades/__tests__/CreateGradeModal.test.tsx` | Correct payload on submit; 409 → "already exists" toast; submit disabled while pending. |
 | `grades/__tests__/SectionChip.test.tsx` | Renders section name; click enters edit mode; Escape cancels; save calls `updateSection`; delete with confirm calls `deleteSection`. |
+| `teachers/__tests__/TeachersPage.test.tsx` | 8 tests: renders rows, empty state, Inactive tab → `isActive: false`, All tab → `isActive: null`, search debounce, pagination, edit opens getById, add button opens modal. `teachersApi` mocked. |
+| `teachers/__tests__/CreateTeacherModal.test.tsx` | 6 tests: correct payload, phone omitted when blank, short password blocked, invalid email blocked, submit disabled while pending, closes + calls onCreated on success. |
+| `teachers/__tests__/EditTeacherModal.test.tsx` | 7 tests: loading spinner, form pre-population, teacherCode read-only, email read-only, isActive checkbox state, correct PUT payload (no teacherCode/email), "disables login" label visible. |
