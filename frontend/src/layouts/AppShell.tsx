@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { BookOpen, CalendarDays, GraduationCap, LayoutDashboard, Layers, LogOut, UsersRound } from 'lucide-react'
+import { BookMarked, BookOpen, CalendarDays, GraduationCap, LayoutDashboard, Layers, LogOut, UsersRound } from 'lucide-react'
 import { authApi } from '../api/auth'
 import { useAuthStore } from '../store/auth.store'
 import type { AuthUser } from '../store/auth.store'
@@ -40,6 +40,12 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Teachers',
     to: '/admin/teachers',
     icon: <UsersRound size={18} />,
+    roles: ['Admin'],
+  },
+  {
+    label: 'Subjects',
+    to: '/admin/subjects',
+    icon: <BookMarked size={18} />,
     roles: ['Admin'],
   },
 ]

@@ -22,6 +22,7 @@ Canonical record of *why* the project is shaped the way it is. Read these to und
 | [docs/ideas/01-academic-year-term-configuration.md](docs/ideas/01-academic-year-term-configuration.md) | Academic year / term configuration — two-level calendar structure, semester auto-scaffold, domain guard enforcement |
 | [docs/ideas/02-class-section-structure.md](docs/ideas/02-class-section-structure.md) | Class / section structure — persistent Grade + Section hierarchy, Admin CRUD, delete guards |
 | [docs/ideas/05-student-crud-frontend.md](docs/ideas/05-student-crud-frontend.md) | Student CRUD frontend — paginated table, status tabs, debounced server-side search, modal create/edit |
+| [docs/ideas/06-subject-management.md](docs/ideas/06-subject-management.md) | Subject catalog — flat school-wide subject list, code immutability rationale, not-doing list |
 | [docs/functionality-overview.md](docs/functionality-overview.md) | Master goal list / checklist of every functionality across all modules — the index of what's left to build |
 | [docs/design-system.md](docs/design-system.md) | Color palette, typography, design vibe — source of truth before syncing to Claude Design |
 
@@ -40,6 +41,7 @@ Concrete technical plans for *how* a feature is actually implemented. **Every fe
 | [specs/02-B-scaffold-frontend-and-auth.md](specs/02-B-scaffold-frontend-and-auth.md) | React 19 + Vite scaffold, Zustand auth store, Axios 401-refresh interceptor, login page, app shell, role-aware route guards | Implemented |
 | [specs/06-B-implement-student-crud-frontend.md](specs/06-B-implement-student-crud-frontend.md) | Student CRUD frontend — paginated table, status tabs, debounced server-side search (`?search=` ILIKE backend addition), modal create/edit, Prev/Next pagination | In progress |
 | [specs/07-B-implement-teacher-crud-frontend.md](specs/07-B-implement-teacher-crud-frontend.md) | Teacher CRUD frontend — paginated table, Active/Inactive/All tabs, debounced search (`?search=` ILIKE backend addition), modal create/edit, IsActive toggle | Implemented |
+| [specs/07-implement-subject-management.md](specs/07-implement-subject-management.md) | Subject entity, Admin CRUD, unique code per school, `IsActive` soft-disable, paged list with ILIKE search | Implemented |
 
 ### Coding Rules — `.claude/rules/`
 Enforceable coding rules an agent must follow while writing code, not background context.

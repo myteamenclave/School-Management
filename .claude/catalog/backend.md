@@ -23,6 +23,7 @@
 | `EnrollmentStatus` (enum) | `Enums/EnrollmentStatus.cs` | `Active`, `Transferred`, `Graduated`, `Dropped` — stored as string in DB |
 | `Grade` | `Entities/Grade.cs` | `BaseEntity` + `ITenantScoped`. Top-level structural catalog entry (e.g. "Grade 5"). `EnsureNoSections()` enforces the delete guard — throws `DomainException` if any sections exist. Backing field `_sections` exposed as `IReadOnlyList<Section> Sections`. Direct instantiation (no factory — no invariant requiring controlled construction). |
 | `Section` | `Entities/Section.cs` | `BaseEntity` + `ITenantScoped`. Belongs to a `Grade`. Name unique per grade (not globally). Always accessed through `IGradeRepository` — no standalone repository. |
+| `Subject` | `Entities/Subject.cs` | `BaseEntity` + `ITenantScoped`. Flat school-wide subject catalog entry. `Code` (max 20, letters/numbers/hyphens/underscores) is unique per school and immutable after creation — enforced by unique index `(SchoolId, Code)`. `IsActive` soft-disables retired subjects. No teacher/section linkage. |
 
 ## Application (`SchoolMgmt.Application`)
 
@@ -59,13 +60,21 @@
 | `UpdateStudentRequest` | `Students/Dtos/UpdateStudentRequest.cs` | Write DTO for student update — includes `EnrollmentStatus` string; `StudentCode` is not updatable |
 | `CreateStudentRequestValidator` | `Students/Validators/CreateStudentRequestValidator.cs` | FluentValidation — `IsEnumName` for Gender, DOB must be in the past |
 | `UpdateStudentRequestValidator` | `Students/Validators/UpdateStudentRequestValidator.cs` | FluentValidation — same as Create plus `IsEnumName` for EnrollmentStatus |
-| `DependencyInjection.AddApplication()` | `DependencyInjection.cs` | Registers `AuthService`, `AcademicYearService`, `GradeService`, `StudentService`, and all FluentValidation validators from the Application assembly |
+| `ISubjectRepository` | `Subjects/ISubjectRepository.cs` | Extends `IRepository<Subject>`. `GetPagedAsync(bool? isActive, string? search, int page, int pageSize)` — active-only default, optional ILIKE on Name + Code, ordered by Name. |
+| `SubjectService` | `Subjects/SubjectService.cs` | `CreateSubjectAsync` (409 on duplicate code via DB unique index + `ConflictException`), `GetSubjectsAsync` (paged + search), `GetSubjectByIdAsync`, `UpdateSubjectAsync` (`Code` immutable). Private `ToDto`/`ToSummaryDto` — no AutoMapper. |
+| `SubjectDto` | `Subjects/Dtos/SubjectDto.cs` | Full subject read DTO: `Id`, `Name`, `Code`, `Description`, `IsActive`, `CreatedAt`, `UpdatedAt`. |
+| `SubjectSummaryDto` | `Subjects/Dtos/SubjectSummaryDto.cs` | List-view DTO: same as `SubjectDto` minus `UpdatedAt`. |
+| `CreateSubjectRequest` | `Subjects/Dtos/CreateSubjectRequest.cs` | Write DTO: `Name`, `Code`, `Description?`. `Code` is validated with regex `^[A-Za-z0-9_\-]+$`. |
+| `UpdateSubjectRequest` | `Subjects/Dtos/UpdateSubjectRequest.cs` | Write DTO: `Name`, `Description?`, `IsActive`. `Code` is NOT updatable. |
+| `CreateSubjectRequestValidator` | `Subjects/Validators/CreateSubjectRequestValidator.cs` | FluentValidation — Name (required, 200 max), Code (required, 20 max, alphanumeric + hyphens/underscores), Description (500 max, optional). |
+| `UpdateSubjectRequestValidator` | `Subjects/Validators/UpdateSubjectRequestValidator.cs` | FluentValidation — Name (required, 200 max), Description (500 max, optional). |
+| `DependencyInjection.AddApplication()` | `DependencyInjection.cs` | Registers `AuthService`, `AcademicYearService`, `GradeService`, `StudentService`, `TeacherService`, `SubjectService`, and all FluentValidation validators from the Application assembly |
 
 ## Infrastructure (`SchoolMgmt.Infrastructure`)
 
 | Type | Location | Purpose |
 |---|---|---|
-| `AppDbContext` | `Persistence/AppDbContext.cs` | EF Core `DbContext`. Applies a global query filter to every `ITenantScoped` entity automatically (reflection over the model, not hand-written per entity). `SaveChangesAsync` is overridden to stamp `CreatedAt`/`UpdatedAt`/`SchoolId` automatically. `DbSet`s: `Schools`, `Users`, `RefreshTokens`, `AcademicYears`, `Semesters`, `Grades`, `Sections`, `Students` |
+| `AppDbContext` | `Persistence/AppDbContext.cs` | EF Core `DbContext`. Applies a global query filter to every `ITenantScoped` entity automatically (reflection over the model, not hand-written per entity). `SaveChangesAsync` is overridden to stamp `CreatedAt`/`UpdatedAt`/`SchoolId` automatically. `DbSet`s: `Schools`, `Users`, `RefreshTokens`, `AcademicYears`, `Semesters`, `Grades`, `Sections`, `Students`, `Teachers`, `Subjects` |
 | `AppDbContextDesignTimeFactory` | `Persistence/AppDbContextDesignTimeFactory.cs` | `IDesignTimeDbContextFactory<AppDbContext>` — lets `dotnet ef` construct the context without the WebApi host. Reads `SCHOOLMGMT_CONNECTION_STRING` env var, falls back to a local default. Uses `StaticTenantProvider` (no `HttpContext` at design time) |
 | `SchoolConfiguration` | `Persistence/Configurations/SchoolConfiguration.cs` | `IEntityTypeConfiguration<School>` — incl. the `HasData` seed for the one demo school (well-known id `00000000-0000-0000-0000-000000000001`) |
 | `UserConfiguration` | `Persistence/Configurations/UserConfiguration.cs` | `IEntityTypeConfiguration<User>` — unique index `(SchoolId, Email)`, `Role` stored as string. Deliberately NO `HasData` seed — see `DemoDataSeeder` |
@@ -89,7 +98,9 @@
 | `GradeRepository` (internal) | `Persistence/Repositories/GradeRepository.cs` | `IGradeRepository` implementation. Uses `_context.Set<Section>()` directly for section queries — same pattern as `AcademicYearRepository` with `Semester`. |
 | `StudentConfiguration` | `Persistence/Configurations/StudentConfiguration.cs` | `IEntityTypeConfiguration<Student>` — unique index `(SchoolId, StudentCode)`, `Gender`/`EnrollmentStatus` stored as string (`HasConversion<string>()`), `DateOfBirth`/`EnrollmentDate` as PostgreSQL `date` |
 | `StudentRepository` (internal) | `Persistence/Repositories/StudentRepository.cs` | `IStudentRepository` implementation. `GetPagedAsync` filters by status (defaults Active), optional ILIKE search on `FirstName + " " + LastName` and `StudentCode` (via `EF.Functions.ILike`), orders by LastName/FirstName. `GetNextStudentCodeAsync` uses `MAX(StudentCode)` with year prefix — EF global query filter ensures tenant scoping automatically |
-| `DependencyInjection.AddInfrastructure()` | `DependencyInjection.cs` | Composition-root extension method — registers `AppDbContext`, `ITenantProvider` (→ `HttpContextTenantProvider`), `IDateTimeProvider`, `IUnitOfWork`, `IRepository<>`, `IUserRepository`, `IRefreshTokenRepository`, `IAcademicYearRepository`, `IGradeRepository`, `IStudentRepository`, `IPasswordHasher`, `IJwtTokenGenerator` |
+| `SubjectConfiguration` | `Persistence/Configurations/SubjectConfiguration.cs` | `IEntityTypeConfiguration<Subject>` — unique index `(SchoolId, Code)`, Name/Code/Description max lengths, `IsActive` default `true`. |
+| `SubjectRepository` (internal) | `Persistence/Repositories/SubjectRepository.cs` | `ISubjectRepository` implementation. `GetPagedAsync` defaults to active-only, optional ILIKE on `Name` and `Code`, ordered by `Name`. |
+| `DependencyInjection.AddInfrastructure()` | `DependencyInjection.cs` | Composition-root extension method — registers `AppDbContext`, `ITenantProvider` (→ `HttpContextTenantProvider`), `IDateTimeProvider`, `IUnitOfWork`, `IRepository<>`, `IUserRepository`, `IRefreshTokenRepository`, `IAcademicYearRepository`, `IGradeRepository`, `IStudentRepository`, `ITeacherRepository`, `ISubjectRepository`, `IPasswordHasher`, `IJwtTokenGenerator` |
 
 ## WebApi (`SchoolMgmt.WebApi`)
 
@@ -104,6 +115,7 @@
 | `AcademicYearsController` | `Controllers/AcademicYearsController.cs` | `[Authorize(Roles = "Admin")]`. `GET /api/academic-years`, `GET /api/academic-years/{id}`, `POST /api/academic-years` (201 + Location), `PUT /api/academic-years/{yearId}/semesters/{semesterId}`, `POST /api/academic-years/{id}/set-current`, `POST /api/academic-years/{yearId}/semesters/{semesterId}/set-current`, `POST /api/academic-years/{id}/archive` |
 | `GradesController` | `Controllers/GradesController.cs` | `[Authorize(Roles = "Admin")]`. `GET /api/grades`, `GET /api/grades/{id}`, `POST /api/grades` (201), `PUT /api/grades/{id}`, `DELETE /api/grades/{id}` (400 if has sections), `POST /api/grades/{gradeId}/sections` (201), `PUT /api/grades/{gradeId}/sections/{sectionId}`, `DELETE /api/grades/{gradeId}/sections/{sectionId}` |
 | `StudentsController` | `Controllers/StudentsController.cs` | `[Authorize(Roles = "Admin")]`. `POST /api/students` (201 + Location), `GET /api/students` (paged, `?status=&search=&page=&pageSize=`, defaults Active/1/20, capped at 100; `search` does ILIKE on FirstName+LastName and StudentCode), `GET /api/students/{id}`, `PUT /api/students/{id}`. No DELETE endpoint — students are never hard-deleted. |
+| `SubjectsController` | `Controllers/SubjectsController.cs` | `[Authorize(Roles = "Admin")]`. `POST /api/subjects` (201 + Location), `GET /api/subjects` (paged, `?isActive=&search=&page=&pageSize=`, defaults active-only/1/20, capped at 100; ILIKE on Name + Code), `GET /api/subjects/{id}`, `PUT /api/subjects/{id}`. No DELETE. `Code` is immutable — not present in `UpdateSubjectRequest`. |
 
 ## Migrations
 
@@ -114,6 +126,7 @@
 | `AddAcademicYears` (`Persistence/Migrations/`) | Creates `AcademicYears` and `Semesters` tables. `Status` stored as `varchar(20)`. Unique index `(SchoolId, Name)` on `AcademicYears`. FK `AcademicYearId → AcademicYears.Id` with `ON DELETE RESTRICT`. |
 | `AddGradesAndSections` (`Persistence/Migrations/`) | Creates `Grades` and `Sections` tables. Unique index `(SchoolId, Name)` on `Grades`. Unique index `(GradeId, Name)` on `Sections`. FK `GradeId → Grades.Id` with `ON DELETE RESTRICT`. |
 | `AddStudents` (`Persistence/Migrations/`) | Creates `Students` table. Unique index `(SchoolId, StudentCode)`. `Gender`/`EnrollmentStatus` stored as `varchar(20)`. `DateOfBirth`/`EnrollmentDate` as PostgreSQL `date`. |
+| `AddSubjects` (`Persistence/Migrations/`) | Creates `Subjects` table. Unique index `(SchoolId, Code)`. `IsActive` default `true`. |
 
 ## Tests
 

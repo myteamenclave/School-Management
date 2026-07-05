@@ -3,6 +3,7 @@ import { AcademicYearsPage } from './academic-years/AcademicYearsPage'
 import { GradesPage } from './grades/GradesPage'
 import { StudentsPage } from './students/StudentsPage'
 import { TeachersPage } from './teachers/TeachersPage'
+import { SubjectsPage } from './subjects/SubjectsPage'
 
 export function AdminRoutes() {
   return (
@@ -11,6 +12,7 @@ export function AdminRoutes() {
       <Route path="grades" element={<GradesPage />} />
       <Route path="students" element={<StudentsPage />} />
       <Route path="teachers" element={<TeachersPage />} />
+      <Route path="subjects" element={<SubjectsPage />} />
     </Routes>
   )
 }

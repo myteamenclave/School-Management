@@ -10,6 +10,7 @@ using SchoolMgmt.Infrastructure.Persistence;
 using SchoolMgmt.Application.AcademicYears;
 using SchoolMgmt.Application.Grades;
 using SchoolMgmt.Application.Students;
+using SchoolMgmt.Application.Subjects;
 using SchoolMgmt.Application.Teachers;
 using SchoolMgmt.Infrastructure.Persistence.Repositories;
 
@@ -39,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<IGradeRepository, GradeRepository>();
         services.AddScoped<IStudentRepository, StudentRepository>();
         services.AddScoped<ITeacherRepository, TeacherRepository>();
+        services.AddScoped<ISubjectRepository, SubjectRepository>();
 
         services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();

@@ -1,4 +1,4 @@
-<!-- Last verified: 2026-07-02. Update this file whenever a new public type/function/component is added or removed from the frontend. Check here before adding new code — don't duplicate something that already exists. -->
+<!-- Last verified: 2026-07-05. Update this file whenever a new public type/function/component is added or removed from the frontend. Check here before adding new code — don't duplicate something that already exists. -->
 
 # Frontend Catalog
 
@@ -45,6 +45,13 @@
 | `CreateTeacherRequest` | `teachers.ts` | `email`, `password`, `firstName`, `lastName`, `joiningDate`, optional `phone`. Creates a User + Teacher atomically. |
 | `UpdateTeacherRequest` | `teachers.ts` | `firstName`, `lastName`, `joiningDate`, optional `phone`, `isActive`. Email/password NOT included — auth concern, out of scope. |
 | `ListTeachersParams` | `teachers.ts` | Query params for `list()`: `isActive: boolean \| null` (null = all), `search`, `page`, `pageSize`. |
+| `subjectsApi` | `subjects.ts` | Thin wrappers: `list(params)`, `getById(id)`, `create(body)`, `update(id, body)`. `list` omits `?isActive=` when `params.isActive` is null (All tab). |
+| `SUBJECT_KEYS` | `subjects.ts` | TanStack Query key factory: `{ list(params), detail(id) }`. All mutations invalidate `['subjects']` prefix key. |
+| `SubjectSummaryDto` | `subjects.ts` | List-view shape: `id`, `name`, `code`, `description` (nullable), `isActive` (boolean), `createdAt`. |
+| `SubjectDto` | `subjects.ts` | Full shape extending `SubjectSummaryDto`: adds `updatedAt`. |
+| `CreateSubjectRequest` | `subjects.ts` | `name`, `code`, optional `description`. Code is immutable after create. |
+| `UpdateSubjectRequest` | `subjects.ts` | `name`, optional `description`, `isActive`. Code NOT included — immutable. |
+| `ListSubjectsParams` | `subjects.ts` | Query params for `list()`: `isActive: boolean \| null` (null = all), `search`, `page`, `pageSize`. |
 
 ## Hooks (`src/hooks/`)
 
@@ -70,7 +77,7 @@
 
 | Component | Purpose |
 |---|---|
-| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role`. Nav items: Dashboard (all roles), Academic Years, Grades & Sections, Students, Teachers (all Admin-only). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
+| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role`. Nav items: Dashboard (all roles), Academic Years, Grades & Sections, Students, Teachers, Subjects (all Admin-only). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
 
 ## Pages (`src/pages/`)
 
@@ -78,7 +85,7 @@
 |---|---|---|
 | `LoginPage` | `auth/LoginPage.tsx` | Split-panel login UI matching the "Login Page - Final" design. Left: navy brand panel with marketing copy and feature items. Right: white panel with RHF+Zod form (email + password + remember-me checkbox). Shows `"Invalid email or password."` form-level error on 401; disables submit while in flight. On success: calls `setUser` then navigates to `/dashboard`. |
 | `DashboardPage` | `dashboard/DashboardPage.tsx` | Stub — "Welcome, {displayName}" heading. All future role-specific dashboards live here. |
-| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years` → `AcademicYearsPage`, `grades` → `GradesPage`, `students` → `StudentsPage`, `teachers` → `TeachersPage`. |
+| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years` → `AcademicYearsPage`, `grades` → `GradesPage`, `students` → `StudentsPage`, `teachers` → `TeachersPage`, `subjects` → `SubjectsPage`. |
 | `AcademicYearsPage` | `admin/academic-years/AcademicYearsPage.tsx` | Admin page at `/admin/academic-years`. Fetches year list via TanStack Query; partitions into current / previous / archived sections; manages `createOpen`, `editingSemester`, `showArchived` state; owns all mutations (setCurrentYear, archive, setCurrentSemester); composes `AcademicYearCard`, `CreateYearModal`, `EditSemesterModal`. |
 | `GradesPage` | `admin/grades/GradesPage.tsx` | Admin page at `/admin/grades`. Fetches grade list via TanStack Query; manages `createOpen`, `editingGrade`, `expandedIds` (accordion) state; owns grade delete mutation; auto-expands accordion for newly created grades via `onCreated` callback; composes `GradeAccordionItem`, `CreateGradeModal`, `EditGradeModal`. |
 | `GradeAccordionItem` | `admin/grades/components/GradeAccordionItem.tsx` | shadcn Accordion card for one grade. Collapsed header shows grade name + section count Badge. Expanded body shows `SectionChip` row, inline add-section form (input + save/cancel), and Edit Grade / Delete Grade buttons. Delete Grade is disabled (with Tooltip) when `grade.sections.length > 0`. Owns `addSectionMutation`. |
@@ -94,6 +101,9 @@
 | `AcademicYearCard` | `admin/academic-years/components/AcademicYearCard.tsx` | Renders one `AcademicYearDto` with its semesters. Highlights current year (`border-l-4` navy + `bg-primary/5`). Shows contextual buttons: Set as Current / Archive on active non-current years; Edit + Set Current on semester rows within current year. Archive requires `window.confirm`. Archived cards show "Archived — read only" and no buttons. |
 | `CreateYearModal` | `admin/academic-years/components/CreateYearModal.tsx` | shadcn Dialog + RHF + Zod for creating an academic year (`name`, `startDate`, `endDate`, cross-field `endDate > startDate`). On 409: shows "An academic year with this name already exists." toast. |
 | `EditSemesterModal` | `admin/academic-years/components/EditSemesterModal.tsx` | shadcn Dialog + RHF + Zod for editing a semester. Controlled by `semester: SemesterDto \| null` (null = closed). Pre-populates from prop via `useEffect` + `reset`. |
+| `SubjectsPage` | `admin/subjects/SubjectsPage.tsx` | Admin page at `/admin/subjects`. Server-paginated table with Active/Inactive/All `Tabs` filter, debounced (300 ms) search (matches name or code), Prev/Next pagination (`keepPreviousData`). State: `tab`, `search`, `debouncedSearch`, `page`, `createOpen`, `editingId`. Inline `StatusBadge` (green=active, zinc=inactive). Composes `CreateSubjectModal` + `EditSubjectModal`. |
+| `CreateSubjectModal` | `admin/subjects/components/CreateSubjectModal.tsx` | shadcn Dialog + RHF + Zod for creating a subject. Fields: name, code (letters/numbers/hyphens/underscores only — immutable after create), description (optional). 409 → toast from `extractError`. |
+| `EditSubjectModal` | `admin/subjects/components/EditSubjectModal.tsx` | shadcn Dialog + RHF + Zod for editing a subject. Controlled by `subjectId: string \| null`. Fetches full `SubjectDto` on open. Displays `code` as read-only subtitle — NOT in PUT payload. `isActive` uses native `<input type="checkbox">` via `Controller`. |
 | `TeacherRoutes` | `teacher/index.tsx` | Stub `<Outlet>` for future `/teacher/*` pages. |
 | `ParentRoutes` | `parent/index.tsx` | Stub `<Outlet>` for future `/parent/*` pages. |
 

@@ -25,6 +25,9 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
   - [ ] CI/CD pipeline (GitHub Actions)
 
 ## Admin / Registrar
+- Subject catalog (school-wide flat list of subjects — name, code, description, IsActive) — [idea doc](ideas/06-subject-management.md)
+  - [x] Backend (spec: [07-implement-subject-management](../specs/07-implement-subject-management.md))
+  - [x] Frontend
 - Student CRUD — [idea doc](ideas/03-student-crud.md) · [frontend idea doc](ideas/05-student-crud-frontend.md)
   - [x] Backend
   - [x] Frontend
@@ -32,8 +35,8 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
   - [ ] Backend
   - [ ] Frontend
 - Teacher management (Admin creates/manages teacher accounts — name, contact, assigned subjects/classes)
-  - [ ] Backend
-  - [ ] Frontend
+  - [x] Backend
+  - [x] Frontend
 - Class/section assignment (students to classes, teachers to subjects/classes)
   - [ ] Backend
   - [ ] Frontend
