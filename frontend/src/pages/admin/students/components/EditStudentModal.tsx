@@ -105,9 +105,16 @@ export function EditStudentModal({ studentId, onClose, onUpdated }: EditStudentM
 
   const dateInputClass = 'flex h-11 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
+  const clampYear = (e: React.FormEvent<HTMLInputElement>) => {
+    const input = e.currentTarget
+    if (!input.value) return
+    const [year, ...rest] = input.value.split('-')
+    if (year.length > 4) input.value = year.slice(0, 4) + (rest.length ? '-' + rest.join('-') : '')
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="modal-fade-in sm:max-w-lg">
+      <DialogContent className="modal-fade-in sm:max-w-lg" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Edit Student</DialogTitle>
           {student && (
@@ -139,7 +146,7 @@ export function EditStudentModal({ studentId, onClose, onUpdated }: EditStudentM
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="es-dob">Date of Birth</Label>
-                <input id="es-dob" type="date" className={dateInputClass} {...register('dateOfBirth')} />
+                <input id="es-dob" type="date" className={dateInputClass} onInput={clampYear} {...register('dateOfBirth')} />
                 {errors.dateOfBirth && <p className="text-xs text-destructive">{errors.dateOfBirth.message}</p>}
               </div>
               <div className="flex flex-col gap-1.5">
@@ -166,7 +173,7 @@ export function EditStudentModal({ studentId, onClose, onUpdated }: EditStudentM
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="es-enrollDate">Enrollment Date</Label>
-              <input id="es-enrollDate" type="date" className={dateInputClass} {...register('enrollmentDate')} />
+              <input id="es-enrollDate" type="date" className={dateInputClass} onInput={clampYear} {...register('enrollmentDate')} />
               {errors.enrollmentDate && <p className="text-xs text-destructive">{errors.enrollmentDate.message}</p>}
             </div>
 

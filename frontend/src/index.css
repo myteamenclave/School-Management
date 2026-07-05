@@ -19,6 +19,10 @@
   --color-border:           #E4E7EB;
   --color-ring:             #1E3A5F;
 
+  /* Popover (Select, Combobox, etc.) */
+  --color-popover:            #FFFFFF;
+  --color-popover-foreground: #0F172A;
+
   /* Semantic */
   --color-destructive:      #DC2626;
 
