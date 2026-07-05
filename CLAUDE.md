@@ -23,6 +23,8 @@ Canonical record of *why* the project is shaped the way it is. Read these to und
 | [docs/ideas/02-class-section-structure.md](docs/ideas/02-class-section-structure.md) | Class / section structure — persistent Grade + Section hierarchy, Admin CRUD, delete guards |
 | [docs/ideas/05-student-crud-frontend.md](docs/ideas/05-student-crud-frontend.md) | Student CRUD frontend — paginated table, status tabs, debounced server-side search, modal create/edit |
 | [docs/ideas/06-subject-management.md](docs/ideas/06-subject-management.md) | Subject catalog — flat school-wide subject list, code immutability rationale, not-doing list |
+| [docs/ideas/07-fee-structure-templates.md](docs/ideas/07-fee-structure-templates.md) | Fee structure templates — named template per grade/year, line items, installment schedule, discount rules, not-doing list |
+| [docs/ideas/07-fee-structure-templates-examples.md](docs/ideas/07-fee-structure-templates-examples.md) | Fee structure templates — concrete sample data (3 templates) and 12 numbered test use cases |
 | [docs/functionality-overview.md](docs/functionality-overview.md) | Master goal list / checklist of every functionality across all modules — the index of what's left to build |
 | [docs/design-system.md](docs/design-system.md) | Color palette, typography, design vibe — source of truth before syncing to Claude Design |
 
@@ -42,6 +44,7 @@ Concrete technical plans for *how* a feature is actually implemented. **Every fe
 | [specs/06-B-implement-student-crud-frontend.md](specs/06-B-implement-student-crud-frontend.md) | Student CRUD frontend — paginated table, status tabs, debounced server-side search (`?search=` ILIKE backend addition), modal create/edit, Prev/Next pagination | In progress |
 | [specs/07-B-implement-teacher-crud-frontend.md](specs/07-B-implement-teacher-crud-frontend.md) | Teacher CRUD frontend — paginated table, Active/Inactive/All tabs, debounced search (`?search=` ILIKE backend addition), modal create/edit, IsActive toggle | Implemented |
 | [specs/07-implement-subject-management.md](specs/07-implement-subject-management.md) | Subject entity, Admin CRUD, unique code per school, `IsActive` soft-disable, paged list with ILIKE search | Implemented |
+| [specs/08-implement-fee-structure-templates.md](specs/08-implement-fee-structure-templates.md) | `FeeTemplate` + 3 child entities (line items, installments, discount rules), Admin CRUD, installment sum validation, per-line-item discount targeting | Not started |
 
 ### Coding Rules — `.claude/rules/`
 Enforceable coding rules an agent must follow while writing code, not background context.

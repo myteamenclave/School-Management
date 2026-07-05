@@ -26,6 +26,10 @@ public class AppDbContext(
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Teacher> Teachers => Set<Teacher>();
     public DbSet<Subject> Subjects => Set<Subject>();
+    public DbSet<FeeTemplate> FeeTemplates => Set<FeeTemplate>();
+    public DbSet<FeeLineItem> FeeLineItems => Set<FeeLineItem>();
+    public DbSet<FeeInstallment> FeeInstallments => Set<FeeInstallment>();
+    public DbSet<DiscountRule> DiscountRules => Set<DiscountRule>();
 
     private static readonly MethodInfo SetTenantFilterMethod =
         typeof(AppDbContext).GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!;

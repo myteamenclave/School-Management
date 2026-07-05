@@ -1,4 +1,4 @@
-<!-- Last verified: 2026-07-01. Update this file whenever a new public type/function is added or removed from the backend. Check here before adding new code — don't duplicate something that already exists. -->
+<!-- Last verified: 2026-07-06. Update this file whenever a new public type/function is added or removed from the backend. Check here before adding new code — don't duplicate something that already exists. -->
 
 # Backend Catalog
 
@@ -24,6 +24,11 @@
 | `Grade` | `Entities/Grade.cs` | `BaseEntity` + `ITenantScoped`. Top-level structural catalog entry (e.g. "Grade 5"). `EnsureNoSections()` enforces the delete guard — throws `DomainException` if any sections exist. Backing field `_sections` exposed as `IReadOnlyList<Section> Sections`. Direct instantiation (no factory — no invariant requiring controlled construction). |
 | `Section` | `Entities/Section.cs` | `BaseEntity` + `ITenantScoped`. Belongs to a `Grade`. Name unique per grade (not globally). Always accessed through `IGradeRepository` — no standalone repository. |
 | `Subject` | `Entities/Subject.cs` | `BaseEntity` + `ITenantScoped`. Flat school-wide subject catalog entry. `Code` (max 20, letters/numbers/hyphens/underscores) is unique per school and immutable after creation — enforced by unique index `(SchoolId, Code)`. `IsActive` soft-disables retired subjects. No teacher/section linkage. |
+| `FeeTemplate` | `Entities/FeeTemplate.cs` | `BaseEntity` + `ITenantScoped`. Root fee-structure blueprint scoped to one `AcademicYear` + one `Grade`. Multiple templates per grade/year pair are allowed (distinguished by `Name`). Owns three child collections via backing fields: `LineItems`, `Installments`, `DiscountRules`. Unique index `(SchoolId, AcademicYearId, GradeId, Name)`. `IsActive` soft-disables retired templates. |
+| `FeeLineItem` | `Entities/FeeLineItem.cs` | `BaseEntity` + `ITenantScoped`. Named charge within a `FeeTemplate` (e.g. "Tuition Fee", "Lab Fee"). Has `Amount` (`numeric(18,2)`) and `DisplayOrder`. Always accessed through its parent template. |
+| `FeeInstallment` | `Entities/FeeInstallment.cs` | `BaseEntity` + `ITenantScoped`. One entry in a template's payment schedule. `Percentage` (`numeric(5,2)`) — service validates the full set sums to 100% before saving. `DisplayOrder` controls sort. |
+| `DiscountRule` | `Entities/DiscountRule.cs` | `BaseEntity` + `ITenantScoped`. Named reduction within a `FeeTemplate`. `RuleType` is `Percentage` or `FlatAmount`; `Value` is the reduction amount. `FeeLineItemId` is nullable — null means the rule applies to the invoice total; non-null targets a specific `FeeLineItem`. When a `FeeLineItem` is deleted, EF is configured `ON DELETE SET NULL` (rule degrades to whole-invoice, not removed). |
+| `DiscountRuleType` (enum) | `Enums/DiscountRuleType.cs` | `Percentage`, `FlatAmount` — stored as string in DB |
 
 ## Application (`SchoolMgmt.Application`)
 
@@ -68,13 +73,28 @@
 | `UpdateSubjectRequest` | `Subjects/Dtos/UpdateSubjectRequest.cs` | Write DTO: `Name`, `Description?`, `IsActive`. `Code` is NOT updatable. |
 | `CreateSubjectRequestValidator` | `Subjects/Validators/CreateSubjectRequestValidator.cs` | FluentValidation — Name (required, 200 max), Code (required, 20 max, alphanumeric + hyphens/underscores), Description (500 max, optional). |
 | `UpdateSubjectRequestValidator` | `Subjects/Validators/UpdateSubjectRequestValidator.cs` | FluentValidation — Name (required, 200 max), Description (500 max, optional). |
-| `DependencyInjection.AddApplication()` | `DependencyInjection.cs` | Registers `AuthService`, `AcademicYearService`, `GradeService`, `StudentService`, `TeacherService`, `SubjectService`, and all FluentValidation validators from the Application assembly |
+| `IFeeTemplateRepository` | `FeeTemplates/IFeeTemplateRepository.cs` | Extends `IRepository<FeeTemplate>`. `GetPagedAsync(academicYearId?, gradeId?, isActive?, page, pageSize)` — active-only default, optional filters; includes `AcademicYear`, `Grade`, and `LineItems` (for `TotalAmount` / `LineItemCount`). `GetByIdWithChildrenAsync(id)` — loads all three child collections with `Include`/`ThenInclude`; used by every write operation and the detail GET. |
+| `FeeTemplateService` | `FeeTemplates/FeeTemplateService.cs` | `CreateAsync` (validates AcademicYear/Grade exist, 409 on duplicate name via unique index), `GetTemplatesAsync` (paged + filters), `GetByIdAsync`, `UpdateHeaderAsync` (Name + IsActive), `ReplaceLineItemsAsync` (merge by optional Id — update/create/delete; cascade nullifies DiscountRule.FeeLineItemId via DB), `ReplaceInstallmentsAsync` (delete-all + insert; validates sum = 100%), `ReplaceDiscountRulesAsync` (delete-all + insert; validates FeeLineItemId belongs to this template). Uses `AppDbContext` DbSets directly for child entity bulk operations (no separate child repositories). |
+| `FeeTemplateSummaryDto` | `FeeTemplates/Dtos/FeeTemplateSummaryDto.cs` | List-view DTO — `Id`, `Name`, `AcademicYearId/Name`, `GradeId/Name`, `TotalAmount`, `LineItemCount`, `IsActive`, `CreatedAt` |
+| `FeeTemplateDto` | `FeeTemplates/Dtos/FeeTemplateDto.cs` | Detail DTO — full header fields + `LineItems`, `Installments`, `DiscountRules` collections |
+| `FeeLineItemDto` / `FeeInstallmentDto` / `DiscountRuleDto` | `FeeTemplates/Dtos/` | Child read DTOs; `DiscountRuleDto` includes `FeeLineItemName` (null when rule targets invoice total) |
+| `CreateFeeTemplateRequest` | `FeeTemplates/Dtos/CreateFeeTemplateRequest.cs` | `Name`, `AcademicYearId`, `GradeId` |
+| `UpdateFeeTemplateRequest` | `FeeTemplates/Dtos/UpdateFeeTemplateRequest.cs` | `Name`, `IsActive` |
+| `ReplaceLineItemsRequest` / `LineItemInput` | `FeeTemplates/Dtos/ReplaceLineItemsRequest.cs` | `Items: [{ Id?, Name, Amount, DisplayOrder }]` — Id present = update existing; Id absent = create new; omitted existing Ids = delete |
+| `ReplaceInstallmentsRequest` / `InstallmentInput` | `FeeTemplates/Dtos/ReplaceInstallmentsRequest.cs` | `Items: [{ Name, Percentage, DisplayOrder }]` — empty list allowed (clears schedule) |
+| `ReplaceDiscountRulesRequest` / `DiscountRuleInput` | `FeeTemplates/Dtos/ReplaceDiscountRulesRequest.cs` | `Items: [{ Name, RuleType, Value, FeeLineItemId? }]` — FeeLineItemId validated to belong to the template |
+| `CreateFeeTemplateRequestValidator` | `FeeTemplates/Validators/` | Name required/200, AcademicYearId/GradeId not-empty |
+| `UpdateFeeTemplateRequestValidator` | `FeeTemplates/Validators/` | Name required/200 |
+| `ReplaceLineItemsRequestValidator` | `FeeTemplates/Validators/` | Each item: Name required/200, Amount > 0 |
+| `ReplaceInstallmentsRequestValidator` | `FeeTemplates/Validators/` | Each item: Name required/200, Percentage in (0, 100]; sum = 100 validated in service |
+| `ReplaceDiscountRulesRequestValidator` | `FeeTemplates/Validators/` | Each item: Name required/200, Value > 0; Percentage type: Value ≤ 100 |
+| `DependencyInjection.AddApplication()` | `DependencyInjection.cs` | Registers `AuthService`, `AcademicYearService`, `GradeService`, `StudentService`, `TeacherService`, `SubjectService`, `FeeTemplateService`, and all FluentValidation validators from the Application assembly |
 
 ## Infrastructure (`SchoolMgmt.Infrastructure`)
 
 | Type | Location | Purpose |
 |---|---|---|
-| `AppDbContext` | `Persistence/AppDbContext.cs` | EF Core `DbContext`. Applies a global query filter to every `ITenantScoped` entity automatically (reflection over the model, not hand-written per entity). `SaveChangesAsync` is overridden to stamp `CreatedAt`/`UpdatedAt`/`SchoolId` automatically. `DbSet`s: `Schools`, `Users`, `RefreshTokens`, `AcademicYears`, `Semesters`, `Grades`, `Sections`, `Students`, `Teachers`, `Subjects` |
+| `AppDbContext` | `Persistence/AppDbContext.cs` | EF Core `DbContext`. Applies a global query filter to every `ITenantScoped` entity automatically (reflection over the model, not hand-written per entity). `SaveChangesAsync` is overridden to stamp `CreatedAt`/`UpdatedAt`/`SchoolId` automatically. `DbSet`s: `Schools`, `Users`, `RefreshTokens`, `AcademicYears`, `Semesters`, `Grades`, `Sections`, `Students`, `Teachers`, `Subjects`, `FeeTemplates`, `FeeLineItems`, `FeeInstallments`, `DiscountRules` |
 | `AppDbContextDesignTimeFactory` | `Persistence/AppDbContextDesignTimeFactory.cs` | `IDesignTimeDbContextFactory<AppDbContext>` — lets `dotnet ef` construct the context without the WebApi host. Reads `SCHOOLMGMT_CONNECTION_STRING` env var, falls back to a local default. Uses `StaticTenantProvider` (no `HttpContext` at design time) |
 | `SchoolConfiguration` | `Persistence/Configurations/SchoolConfiguration.cs` | `IEntityTypeConfiguration<School>` — incl. the `HasData` seed for the one demo school (well-known id `00000000-0000-0000-0000-000000000001`) |
 | `UserConfiguration` | `Persistence/Configurations/UserConfiguration.cs` | `IEntityTypeConfiguration<User>` — unique index `(SchoolId, Email)`, `Role` stored as string. Deliberately NO `HasData` seed — see `DemoDataSeeder` |
@@ -100,7 +120,12 @@
 | `StudentRepository` (internal) | `Persistence/Repositories/StudentRepository.cs` | `IStudentRepository` implementation. `GetPagedAsync` filters by status (defaults Active), optional ILIKE search on `FirstName + " " + LastName` and `StudentCode` (via `EF.Functions.ILike`), orders by LastName/FirstName. `GetNextStudentCodeAsync` uses `MAX(StudentCode)` with year prefix — EF global query filter ensures tenant scoping automatically |
 | `SubjectConfiguration` | `Persistence/Configurations/SubjectConfiguration.cs` | `IEntityTypeConfiguration<Subject>` — unique index `(SchoolId, Code)`, Name/Code/Description max lengths, `IsActive` default `true`. |
 | `SubjectRepository` (internal) | `Persistence/Repositories/SubjectRepository.cs` | `ISubjectRepository` implementation. `GetPagedAsync` defaults to active-only, optional ILIKE on `Name` and `Code`, ordered by `Name`. |
-| `DependencyInjection.AddInfrastructure()` | `DependencyInjection.cs` | Composition-root extension method — registers `AppDbContext`, `ITenantProvider` (→ `HttpContextTenantProvider`), `IDateTimeProvider`, `IUnitOfWork`, `IRepository<>`, `IUserRepository`, `IRefreshTokenRepository`, `IAcademicYearRepository`, `IGradeRepository`, `IStudentRepository`, `ITeacherRepository`, `ISubjectRepository`, `IPasswordHasher`, `IJwtTokenGenerator` |
+| `FeeTemplateConfiguration` | `Persistence/Configurations/FeeTemplateConfiguration.cs` | `IEntityTypeConfiguration<FeeTemplate>` — unique index `(SchoolId, AcademicYearId, GradeId, Name)`, `IsActive` default `true`, HasMany wiring for all three child collections with `ON DELETE CASCADE`. |
+| `FeeLineItemConfiguration` | `Persistence/Configurations/FeeLineItemConfiguration.cs` | `IEntityTypeConfiguration<FeeLineItem>` — `Amount` as `numeric(18,2)`, FK to `FeeTemplates` via parent config. |
+| `FeeInstallmentConfiguration` | `Persistence/Configurations/FeeInstallmentConfiguration.cs` | `IEntityTypeConfiguration<FeeInstallment>` — `Percentage` as `numeric(5,2)`, FK to `FeeTemplates` via parent config. |
+| `DiscountRuleConfiguration` | `Persistence/Configurations/DiscountRuleConfiguration.cs` | `IEntityTypeConfiguration<DiscountRule>` — `RuleType` stored as string, `Value` as `numeric(18,2)`, nullable FK to `FeeLineItems` with `ON DELETE SET NULL`. |
+| `FeeTemplateRepository` (internal) | `Persistence/Repositories/FeeTemplateRepository.cs` | `IFeeTemplateRepository` implementation. `GetPagedAsync` includes `AcademicYear`/`Grade`/`LineItems` (for summary totals). `GetByIdWithChildrenAsync` includes all three child collections + `DiscountRule → FeeLineItem` via `ThenInclude`; ordered by `DisplayOrder` where applicable. |
+| `DependencyInjection.AddInfrastructure()` | `DependencyInjection.cs` | Composition-root extension method — registers `AppDbContext`, `ITenantProvider` (→ `HttpContextTenantProvider`), `IDateTimeProvider`, `IUnitOfWork`, `IRepository<>`, `IUserRepository`, `IRefreshTokenRepository`, `IAcademicYearRepository`, `IGradeRepository`, `IStudentRepository`, `ITeacherRepository`, `ISubjectRepository`, `IFeeTemplateRepository`, `IPasswordHasher`, `IJwtTokenGenerator` |
 
 ## WebApi (`SchoolMgmt.WebApi`)
 
@@ -116,6 +141,7 @@
 | `GradesController` | `Controllers/GradesController.cs` | `[Authorize(Roles = "Admin")]`. `GET /api/grades`, `GET /api/grades/{id}`, `POST /api/grades` (201), `PUT /api/grades/{id}`, `DELETE /api/grades/{id}` (400 if has sections), `POST /api/grades/{gradeId}/sections` (201), `PUT /api/grades/{gradeId}/sections/{sectionId}`, `DELETE /api/grades/{gradeId}/sections/{sectionId}` |
 | `StudentsController` | `Controllers/StudentsController.cs` | `[Authorize(Roles = "Admin")]`. `POST /api/students` (201 + Location), `GET /api/students` (paged, `?status=&search=&page=&pageSize=`, defaults Active/1/20, capped at 100; `search` does ILIKE on FirstName+LastName and StudentCode), `GET /api/students/{id}`, `PUT /api/students/{id}`. No DELETE endpoint — students are never hard-deleted. |
 | `SubjectsController` | `Controllers/SubjectsController.cs` | `[Authorize(Roles = "Admin")]`. `POST /api/subjects` (201 + Location), `GET /api/subjects` (paged, `?isActive=&search=&page=&pageSize=`, defaults active-only/1/20, capped at 100; ILIKE on Name + Code), `GET /api/subjects/{id}`, `PUT /api/subjects/{id}`. No DELETE. `Code` is immutable — not present in `UpdateSubjectRequest`. |
+| `FeeTemplatesController` | `Controllers/FeeTemplatesController.cs` | `[Authorize(Roles = "Admin")]`. `POST /api/fee-templates` (201 + Location), `GET /api/fee-templates` (paged, `?academicYearId=&gradeId=&isActive=&page=&pageSize=`, defaults active-only/1/20, capped at 100), `GET /api/fee-templates/{id}` (full detail with children), `PUT /api/fee-templates/{id}` (header: name + isActive), `PUT /api/fee-templates/{id}/line-items` (replace collection), `PUT /api/fee-templates/{id}/installments` (replace; 400 if sum ≠ 100%), `PUT /api/fee-templates/{id}/discount-rules` (replace; 400 if FeeLineItemId not in template). No DELETE. |
 
 ## Migrations
 
@@ -127,6 +153,7 @@
 | `AddGradesAndSections` (`Persistence/Migrations/`) | Creates `Grades` and `Sections` tables. Unique index `(SchoolId, Name)` on `Grades`. Unique index `(GradeId, Name)` on `Sections`. FK `GradeId → Grades.Id` with `ON DELETE RESTRICT`. |
 | `AddStudents` (`Persistence/Migrations/`) | Creates `Students` table. Unique index `(SchoolId, StudentCode)`. `Gender`/`EnrollmentStatus` stored as `varchar(20)`. `DateOfBirth`/`EnrollmentDate` as PostgreSQL `date`. |
 | `AddSubjects` (`Persistence/Migrations/`) | Creates `Subjects` table. Unique index `(SchoolId, Code)`. `IsActive` default `true`. |
+| `AddFeeStructureTemplates` (`Persistence/Migrations/`) | Creates `FeeTemplates`, `FeeLineItems`, `FeeInstallments`, `DiscountRules` tables. Unique index `(SchoolId, AcademicYearId, GradeId, Name)` on `FeeTemplates`. `ON DELETE CASCADE` from `FeeTemplates` to all three child tables. `ON DELETE SET NULL` on `DiscountRules.FeeLineItemId → FeeLineItems.Id`. |
 
 ## Tests
 
