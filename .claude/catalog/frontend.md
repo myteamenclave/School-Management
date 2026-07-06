@@ -52,6 +52,17 @@
 | `CreateSubjectRequest` | `subjects.ts` | `name`, `code`, optional `description`. Code is immutable after create. |
 | `UpdateSubjectRequest` | `subjects.ts` | `name`, optional `description`, `isActive`. Code NOT included — immutable. |
 | `ListSubjectsParams` | `subjects.ts` | Query params for `list()`: `isActive: boolean \| null` (null = all), `search`, `page`, `pageSize`. |
+| `feeTemplatesApi` | `feeTemplates.ts` | Thin wrappers: `list(params)`, `getById(id)`, `create(body)`, `updateHeader(id, body)`, `replaceLineItems(id, items)`, `replaceInstallments(id, items)`, `replaceDiscountRules(id, items)`. `list` omits `?isActive=` when null. |
+| `FEE_TEMPLATE_KEYS` | `feeTemplates.ts` | TanStack Query key factory: `{ list(params), detail(id) }`. Mutations invalidate `['fee-templates', 'list']` and setQueryData on detail. |
+| `FeeTemplateSummaryDto` | `feeTemplates.ts` | List-view shape: `id`, `name`, `academicYearId/Name`, `gradeId/Name`, `totalAmount`, `lineItemCount`, `isActive`, `createdAt`. |
+| `FeeTemplateDto` | `feeTemplates.ts` | Full shape with `lineItems: FeeLineItemDto[]`, `installments: FeeInstallmentDto[]`, `discountRules: DiscountRuleDto[]`. |
+| `FeeLineItemDto` | `feeTemplates.ts` | `id`, `name`, `amount`, `displayOrder` |
+| `FeeInstallmentDto` | `feeTemplates.ts` | `id`, `name`, `percentage`, `displayOrder` |
+| `DiscountRuleDto` | `feeTemplates.ts` | `id`, `name`, `ruleType` (`'Percentage'\|'FlatAmount'`), `value`, `feeLineItemId` (null = invoice total), `feeLineItemName` |
+| `LineItemInput` | `feeTemplates.ts` | `id?` (absent for new items), `name`, `amount`, `displayOrder` |
+| `InstallmentInput` | `feeTemplates.ts` | `name`, `percentage`, `displayOrder` |
+| `DiscountRuleInput` | `feeTemplates.ts` | `name`, `ruleType`, `value`, `feeLineItemId?` (absent = invoice total) |
+| `ListFeeTemplatesParams` | `feeTemplates.ts` | `isActive: boolean\|null`, `academicYearId\|null`, `gradeId\|null`, `page`, `pageSize` |
 
 ## Hooks (`src/hooks/`)
 
@@ -77,7 +88,7 @@
 
 | Component | Purpose |
 |---|---|
-| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role`. Nav items: Dashboard (all roles), Academic Years, Grades & Sections, Students, Teachers, Subjects (all Admin-only). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
+| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role`. Nav items: Dashboard (all roles), Academic Years, Grades & Sections, Students, Teachers, Subjects, Fee Templates (all Admin-only). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
 
 ## Pages (`src/pages/`)
 
@@ -85,7 +96,7 @@
 |---|---|---|
 | `LoginPage` | `auth/LoginPage.tsx` | Split-panel login UI matching the "Login Page - Final" design. Left: navy brand panel with marketing copy and feature items. Right: white panel with RHF+Zod form (email + password + remember-me checkbox). Shows `"Invalid email or password."` form-level error on 401; disables submit while in flight. On success: calls `setUser` then navigates to `/dashboard`. |
 | `DashboardPage` | `dashboard/DashboardPage.tsx` | Stub — "Welcome, {displayName}" heading. All future role-specific dashboards live here. |
-| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years` → `AcademicYearsPage`, `grades` → `GradesPage`, `students` → `StudentsPage`, `teachers` → `TeachersPage`, `subjects` → `SubjectsPage`. |
+| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years`, `grades`, `students`, `teachers`, `subjects`, `fee-templates`, `fee-templates/:id`. |
 | `AcademicYearsPage` | `admin/academic-years/AcademicYearsPage.tsx` | Admin page at `/admin/academic-years`. Fetches year list via TanStack Query; partitions into current / previous / archived sections; manages `createOpen`, `editingSemester`, `showArchived` state; owns all mutations (setCurrentYear, archive, setCurrentSemester); composes `AcademicYearCard`, `CreateYearModal`, `EditSemesterModal`. |
 | `GradesPage` | `admin/grades/GradesPage.tsx` | Admin page at `/admin/grades`. Fetches grade list via TanStack Query; manages `createOpen`, `editingGrade`, `expandedIds` (accordion) state; owns grade delete mutation; auto-expands accordion for newly created grades via `onCreated` callback; composes `GradeAccordionItem`, `CreateGradeModal`, `EditGradeModal`. |
 | `GradeAccordionItem` | `admin/grades/components/GradeAccordionItem.tsx` | shadcn Accordion card for one grade. Collapsed header shows grade name + section count Badge. Expanded body shows `SectionChip` row, inline add-section form (input + save/cancel), and Edit Grade / Delete Grade buttons. Delete Grade is disabled (with Tooltip) when `grade.sections.length > 0`. Owns `addSectionMutation`. |
@@ -104,6 +115,12 @@
 | `SubjectsPage` | `admin/subjects/SubjectsPage.tsx` | Admin page at `/admin/subjects`. Server-paginated table with Active/Inactive/All `Tabs` filter, debounced (300 ms) search (matches name or code), Prev/Next pagination (`keepPreviousData`). State: `tab`, `search`, `debouncedSearch`, `page`, `createOpen`, `editingId`. Inline `StatusBadge` (green=active, zinc=inactive). Composes `CreateSubjectModal` + `EditSubjectModal`. |
 | `CreateSubjectModal` | `admin/subjects/components/CreateSubjectModal.tsx` | shadcn Dialog + RHF + Zod for creating a subject. Fields: name, code (letters/numbers/hyphens/underscores only — immutable after create), description (optional). 409 → toast from `extractError`. |
 | `EditSubjectModal` | `admin/subjects/components/EditSubjectModal.tsx` | shadcn Dialog + RHF + Zod for editing a subject. Controlled by `subjectId: string \| null`. Fetches full `SubjectDto` on open. Displays `code` as read-only subtitle — NOT in PUT payload. `isActive` uses native `<input type="checkbox">` via `Controller`. |
+| `FeeTemplatesPage` | `admin/fee-templates/FeeTemplatesPage.tsx` | Admin list page at `/admin/fee-templates`. Active/Inactive/All status `Tabs`, Academic Year + Grade `Select` dropdowns (both filterable), Prev/Next pagination (`keepPreviousData`). Row click → view mode, pencil icon → edit mode (`?edit=true`). Inline `StatusBadge` and `currencyFmt` (PHP). Composes `CreateFeeTemplateModal`. |
+| `FeeTemplatePage` | `admin/fee-templates/FeeTemplatePage.tsx` | Admin detail/edit page at `/admin/fee-templates/:id`. Mode controlled by `?edit=true` search param (`useSearchParams`). Breadcrumb nav back to list. Inline `TemplateHeaderSection` (view=read-only+Edit button; edit=RHF form with name+isActive checkbox). Unsaved-changes guard via `useBlocker` (in-app nav) and `beforeunload` (browser close). Per-tab dirty dot indicator (`●`). Inline `ConfirmDiscardDialog`. Composes `LineItemsTab`, `InstallmentsTab`, `DiscountRulesTab`. |
+| `CreateFeeTemplateModal` | `admin/fee-templates/components/CreateFeeTemplateModal.tsx` | shadcn Dialog + RHF + Zod for creating a fee template. Fields: name, academicYearId (Select), gradeId (Select). On success: invalidates `['fee-templates']`, navigates to `/admin/fee-templates/${id}?edit=true`. No `onCreated` callback — navigation replaces it. |
+| `LineItemsTab` | `admin/fee-templates/components/LineItemsTab.tsx` | Tab for managing fee line items. Local `localItems`/`savedItems` state initialized from `template.lineItems`. View mode: read-only table with PHP currency. Edit mode: editable table rows (name, amount, displayOrder) + add/delete. Save calls `replaceLineItems`; sets detail query cache + invalidates list. Dirty tracked by JSON.stringify comparison. |
+| `InstallmentsTab` | `admin/fee-templates/components/InstallmentsTab.tsx` | Tab for managing installment schedule. Same local state pattern. Always-visible percentage sum indicator (red when sum≠100%, green otherwise). Save disabled when `localItems.length > 0 && sum≠100%`. Calls `replaceInstallments`. |
+| `DiscountRulesTab` | `admin/fee-templates/components/DiscountRulesTab.tsx` | Tab for managing discount rules. Same local state pattern. Target line item dropdown reads from `template.lineItems` (last-saved, not LineItemsTab local state). Rule type Select: `Percentage`/`FlatAmount`. `feeLineItemId=undefined` = "Invoice total". Calls `replaceDiscountRules`. |
 | `TeacherRoutes` | `teacher/index.tsx` | Stub `<Outlet>` for future `/teacher/*` pages. |
 | `ParentRoutes` | `parent/index.tsx` | Stub `<Outlet>` for future `/parent/*` pages. |
 
