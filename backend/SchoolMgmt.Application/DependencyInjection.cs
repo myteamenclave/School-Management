@@ -5,9 +5,11 @@ using SchoolMgmt.Application.AcademicYears;
 using SchoolMgmt.Application.Auth;
 using SchoolMgmt.Application.Grades;
 using SchoolMgmt.Application.Students;
+using SchoolMgmt.Application.Enrollments;
 using SchoolMgmt.Application.FeeTemplates;
 using SchoolMgmt.Application.Subjects;
 using SchoolMgmt.Application.Teachers;
+using SchoolMgmt.Application.TeacherAssignments;
 
 namespace SchoolMgmt.Application;
 
@@ -22,6 +24,8 @@ public static class DependencyInjection
         services.AddScoped<TeacherService>();
         services.AddScoped<SubjectService>();
         services.AddScoped<FeeTemplateService>();
+        services.AddScoped<EnrollmentService>();
+        services.AddScoped<TeacherAssignmentService>();
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         return services;

@@ -30,6 +30,8 @@ public class AppDbContext(
     public DbSet<FeeLineItem> FeeLineItems => Set<FeeLineItem>();
     public DbSet<FeeInstallment> FeeInstallments => Set<FeeInstallment>();
     public DbSet<DiscountRule> DiscountRules => Set<DiscountRule>();
+    public DbSet<StudentSectionEnrollment> StudentSectionEnrollments => Set<StudentSectionEnrollment>();
+    public DbSet<TeacherSectionSubject> TeacherSectionSubjects => Set<TeacherSectionSubject>();
 
     private static readonly MethodInfo SetTenantFilterMethod =
         typeof(AppDbContext).GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!;

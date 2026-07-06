@@ -10,9 +10,11 @@ using SchoolMgmt.Infrastructure.Persistence;
 using SchoolMgmt.Application.AcademicYears;
 using SchoolMgmt.Application.Grades;
 using SchoolMgmt.Application.Students;
+using SchoolMgmt.Application.Enrollments;
 using SchoolMgmt.Application.FeeTemplates;
 using SchoolMgmt.Application.Subjects;
 using SchoolMgmt.Application.Teachers;
+using SchoolMgmt.Application.TeacherAssignments;
 using SchoolMgmt.Infrastructure.Persistence.Repositories;
 
 namespace SchoolMgmt.Infrastructure;
@@ -43,6 +45,8 @@ public static class DependencyInjection
         services.AddScoped<ITeacherRepository, TeacherRepository>();
         services.AddScoped<ISubjectRepository, SubjectRepository>();
         services.AddScoped<IFeeTemplateRepository, FeeTemplateRepository>();
+        services.AddScoped<IStudentSectionEnrollmentRepository, StudentSectionEnrollmentRepository>();
+        services.AddScoped<ITeacherSectionSubjectRepository, TeacherSectionSubjectRepository>();
 
         services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();

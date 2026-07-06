@@ -24,6 +24,11 @@ internal sealed class GradeRepository : Repository<Grade>, IGradeRepository
     public Task<Section?> GetSectionAsync(Guid gradeId, Guid sectionId, CancellationToken ct = default) =>
         _context.Set<Section>().FirstOrDefaultAsync(s => s.GradeId == gradeId && s.Id == sectionId, ct);
 
+    public Task<Section?> GetSectionByIdAsync(Guid sectionId, CancellationToken ct = default) =>
+        _context.Set<Section>()
+            .Include(s => s.Grade)
+            .FirstOrDefaultAsync(s => s.Id == sectionId, ct);
+
     public Task<bool> SectionNameExistsInGradeAsync(Guid gradeId, string name, CancellationToken ct = default) =>
         _context.Set<Section>().AnyAsync(s => s.GradeId == gradeId && s.Name == name, ct);
 
