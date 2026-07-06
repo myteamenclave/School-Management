@@ -7,5 +7,6 @@ public record ReplaceInstallmentsRequest(
 public record InstallmentInput(
     string Name,
     decimal Percentage,
+    string? DueLabel,
     int DisplayOrder
 );

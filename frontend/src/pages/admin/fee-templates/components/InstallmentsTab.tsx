@@ -38,6 +38,7 @@ export function InstallmentsTab({ template, isEditMode, onDirtyChange, templateI
     const items: InstallmentInput[] = template.installments.map((inst) => ({
       name: inst.name,
       percentage: inst.percentage,
+      dueLabel: inst.dueLabel ?? '',
       displayOrder: inst.displayOrder,
     }))
     setLocalItems(items)
@@ -60,7 +61,7 @@ export function InstallmentsTab({ template, isEditMode, onDirtyChange, templateI
   const addItem = () => {
     setLocalItems((prev) => [
       ...prev,
-      { name: '', percentage: 0, displayOrder: prev.length + 1 },
+      { name: '', percentage: 0, dueLabel: '', displayOrder: prev.length + 1 },
     ])
   }
 
@@ -80,6 +81,7 @@ export function InstallmentsTab({ template, isEditMode, onDirtyChange, templateI
       const newItems: InstallmentInput[] = updated.installments.map((inst) => ({
         name: inst.name,
         percentage: inst.percentage,
+        dueLabel: inst.dueLabel ?? '',
         displayOrder: inst.displayOrder,
       }))
       setLocalItems(newItems)
@@ -108,13 +110,14 @@ export function InstallmentsTab({ template, isEditMode, onDirtyChange, templateI
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Percentage</TableHead>
+                <TableHead>Due Label</TableHead>
                 <TableHead>Order</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {localItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground text-sm">
+                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground text-sm">
                     No installments yet.
                   </TableCell>
                 </TableRow>
@@ -123,6 +126,7 @@ export function InstallmentsTab({ template, isEditMode, onDirtyChange, templateI
                   <TableRow key={idx}>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell className="font-mono text-sm">{item.percentage.toFixed(2)}%</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{item.dueLabel || '—'}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{item.displayOrder}</TableCell>
                   </TableRow>
                 ))
@@ -144,6 +148,7 @@ export function InstallmentsTab({ template, isEditMode, onDirtyChange, templateI
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Percentage (%)</TableHead>
+              <TableHead>Due Label</TableHead>
               <TableHead>Order</TableHead>
               <TableHead className="w-12" />
             </TableRow>
@@ -151,7 +156,7 @@ export function InstallmentsTab({ template, isEditMode, onDirtyChange, templateI
           <TableBody>
             {localItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground text-sm">
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground text-sm">
                   No installments yet. Add one below.
                 </TableCell>
               </TableRow>
@@ -174,6 +179,14 @@ export function InstallmentsTab({ template, isEditMode, onDirtyChange, templateI
                       value={item.percentage}
                       onChange={(e) => updateItem(idx, 'percentage', parseFloat(e.target.value) || 0)}
                       className="h-8 w-24"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      placeholder="e.g. Upon enrollment"
+                      value={item.dueLabel}
+                      onChange={(e) => updateItem(idx, 'dueLabel', e.target.value)}
+                      className="h-8"
                     />
                   </TableCell>
                   <TableCell>

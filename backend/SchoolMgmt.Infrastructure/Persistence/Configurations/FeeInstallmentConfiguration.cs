@@ -13,6 +13,7 @@ public class FeeInstallmentConfiguration : IEntityTypeConfiguration<FeeInstallme
 
         builder.Property(x => x.Name).IsRequired().HasMaxLength(200);
         builder.Property(x => x.Percentage).IsRequired().HasColumnType("numeric(5,2)");
+        builder.Property(x => x.DueLabel).HasMaxLength(200);
         builder.Property(x => x.DisplayOrder).IsRequired();
     }
 }

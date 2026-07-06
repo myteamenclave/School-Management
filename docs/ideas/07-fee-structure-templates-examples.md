@@ -26,10 +26,9 @@ testing the backend API and frontend UI.
 | Name              | Percentage | Due Label       |
 |-------------------|------------|-----------------|
 | 1st Installment   | 40%        | Upon enrollment |
-| 2nd Installment   | 30%        | Start of Term 2 |
-| 3rd Installment   | 30%        | Start of Term 3 |
+| 2nd Installment   | 60%        | Start of Term 2 |
 
-> 40% of 42,000 = 16,800 · 30% = 12,600 · 30% = 12,600
+> 40% of 42,000 = 16,800 · 60% = 25,200
 
 **Discount Rules**
 

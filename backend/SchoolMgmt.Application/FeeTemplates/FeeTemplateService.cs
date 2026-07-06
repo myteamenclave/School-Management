@@ -148,6 +148,7 @@ public class FeeTemplateService(
                 FeeTemplateId = id,
                 Name = input.Name,
                 Percentage = input.Percentage,
+                DueLabel = input.DueLabel,
                 DisplayOrder = input.DisplayOrder,
             }, ct);
         }
@@ -215,7 +216,7 @@ public class FeeTemplateService(
         t.CreatedAt,
         t.UpdatedAt,
         t.LineItems.Select(li => new FeeLineItemDto(li.Id, li.Name, li.Amount, li.DisplayOrder)).ToList(),
-        t.Installments.Select(i => new FeeInstallmentDto(i.Id, i.Name, i.Percentage, i.DisplayOrder)).ToList(),
+        t.Installments.Select(i => new FeeInstallmentDto(i.Id, i.Name, i.Percentage, i.DueLabel, i.DisplayOrder)).ToList(),
         t.DiscountRules.Select(dr => new DiscountRuleDto(
             dr.Id, dr.Name, dr.RuleType, dr.Value,
             dr.FeeLineItemId, dr.FeeLineItem?.Name)).ToList());

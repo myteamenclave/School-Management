@@ -13,6 +13,7 @@ export interface FeeInstallmentDto {
   id: string
   name: string
   percentage: number
+  dueLabel: string | null
   displayOrder: number
 }
 
@@ -75,6 +76,7 @@ export interface LineItemInput {
 export interface InstallmentInput {
   name: string
   percentage: number
+  dueLabel: string
   displayOrder: number
 }
 
