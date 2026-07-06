@@ -189,7 +189,7 @@ public class TeachersControllerTests(PostgresContainerFixture fixture)
     // ─── GET /api/teachers ───────────────────────────────────────────────────
 
     [Fact]
-    public async Task GetTeachers_NoParams_ReturnsOnlyActiveTeachers()
+    public async Task GetTeachers_IsActiveTrue_ReturnsOnlyActiveTeachers()
     {
         await using var factory = fixture.CreateFactory();
         using var client = factory.CreateClient();
@@ -208,7 +208,7 @@ public class TeachersControllerTests(PostgresContainerFixture fixture)
             isActive = false,
         }));
 
-        var response = await client.SendAsync(Get("/api/teachers", cookies));
+        var response = await client.SendAsync(Get("/api/teachers?isActive=true", cookies));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
@@ -341,7 +341,7 @@ public class TeachersControllerTests(PostgresContainerFixture fixture)
     }
 
     [Fact]
-    public async Task UpdateTeacher_DeactivateTeacher_AbsentFromDefaultList()
+    public async Task UpdateTeacher_DeactivateTeacher_AbsentFromActiveList()
     {
         await using var factory = fixture.CreateFactory();
         using var client = factory.CreateClient();
@@ -359,7 +359,7 @@ public class TeachersControllerTests(PostgresContainerFixture fixture)
             isActive = false,
         }));
 
-        var listResponse = await client.SendAsync(Get("/api/teachers", cookies));
+        var listResponse = await client.SendAsync(Get("/api/teachers?isActive=true", cookies));
         var body = await listResponse.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
         var items = body.GetProperty("items").EnumerateArray().ToList();
         Assert.DoesNotContain(items, item => item.GetProperty("id").GetString() == id);

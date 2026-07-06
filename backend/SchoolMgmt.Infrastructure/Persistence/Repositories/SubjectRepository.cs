@@ -12,9 +12,8 @@ internal sealed class SubjectRepository(AppDbContext context)
     {
         var query = DbSet.AsQueryable();
 
-        query = isActive.HasValue
-            ? query.Where(s => s.IsActive == isActive.Value)
-            : query.Where(s => s.IsActive);
+        if (isActive.HasValue)
+            query = query.Where(s => s.IsActive == isActive.Value);
 
         if (!string.IsNullOrWhiteSpace(search))
         {

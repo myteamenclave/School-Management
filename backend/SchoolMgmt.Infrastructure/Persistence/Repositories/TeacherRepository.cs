@@ -12,9 +12,8 @@ internal sealed class TeacherRepository(AppDbContext context)
     {
         var query = DbSet.Include(t => t.User).AsQueryable();
 
-        query = isActive.HasValue
-            ? query.Where(t => t.IsActive == isActive.Value)
-            : query.Where(t => t.IsActive);
+        if (isActive.HasValue)
+            query = query.Where(t => t.IsActive == isActive.Value);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
