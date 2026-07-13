@@ -182,17 +182,19 @@ export function TeacherDetailPage() {
 
   return (
     <div className="px-8 py-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start gap-4 mb-8">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/admin/teachers')} className="-ml-2 mt-0.5">
+      {/* Back row */}
+      <div className="mb-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/admin/teachers')} className="-ml-2">
           <ArrowLeft size={16} className="mr-1" /> Back
         </Button>
-        <div>
-          <h1 className="font-heading text-2xl font-semibold text-foreground">
-            {teacher.firstName} {teacher.lastName}
-          </h1>
-          <span className="font-mono text-xs text-muted-foreground">{teacher.teacherCode}</span>
-        </div>
+      </div>
+
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="font-heading text-2xl font-semibold text-foreground">
+          {teacher.firstName} {teacher.lastName}
+        </h1>
+        <span className="font-mono text-xs text-muted-foreground">{teacher.teacherCode}</span>
       </div>
 
       <Tabs defaultValue="details">

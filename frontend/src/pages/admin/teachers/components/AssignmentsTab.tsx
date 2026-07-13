@@ -19,7 +19,6 @@ import {
   TableRow,
 } from '../../../../components/ui/table'
 import { Button } from '../../../../components/ui/button'
-import { Badge } from '../../../../components/ui/badge'
 import { AddAssignmentModal } from './AddAssignmentModal'
 import { academicYearsApi, ACADEMIC_YEAR_KEYS } from '../../../../api/academicYears'
 import { teacherAssignmentsApi, ASSIGNMENT_KEYS } from '../../../../api/teacherAssignments'
@@ -82,16 +81,19 @@ export function AssignmentsTab({ teacherId }: AssignmentsTabProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <Select value={selectedYearId} onValueChange={setSelectedYearId}>
-          <SelectTrigger className="w-52">
-            <SelectValue placeholder="Select academic year" />
-          </SelectTrigger>
-          <SelectContent>
-            {years.map((y) => (
-              <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-foreground whitespace-nowrap">Academic Year</label>
+          <Select value={selectedYearId} onValueChange={setSelectedYearId}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select year" />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map((y) => (
+                <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <Button size="sm" disabled={!selectedYearId} onClick={() => setAddOpen(true)}>
           <Plus size={14} className="mr-1.5" /> Add Assignment
@@ -108,6 +110,7 @@ export function AssignmentsTab({ teacherId }: AssignmentsTabProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Subject</TableHead>
+                <TableHead>Code</TableHead>
                 <TableHead>Grade</TableHead>
                 <TableHead>Section</TableHead>
                 <TableHead className="w-14" />
@@ -116,18 +119,16 @@ export function AssignmentsTab({ teacherId }: AssignmentsTabProps) {
             <TableBody>
               {assignments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground text-sm">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground text-sm">
                     {selectedYearId ? 'No assignments for this year.' : 'Select a year to view assignments.'}
                   </TableCell>
                 </TableRow>
               ) : (
                 assignments.map((a) => (
                   <TableRow key={a.id}>
+                    <TableCell className="font-medium">{a.subjectName}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{a.subjectName}</span>
-                        <Badge variant="secondary" className="font-mono text-xs">{a.subjectCode}</Badge>
-                      </div>
+                      <span className="font-mono text-xs text-muted-foreground">{a.subjectCode}</span>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{a.gradeName}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{a.sectionName}</TableCell>
