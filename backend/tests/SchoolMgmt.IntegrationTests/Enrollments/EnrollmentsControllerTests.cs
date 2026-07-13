@@ -483,6 +483,61 @@ public class EnrollmentsControllerTests(PostgresContainerFixture fixture)
         Assert.Equal(HttpStatusCode.Created, reEnroll.StatusCode);
     }
 
+    // ─── GET /api/enrollments/enrolled-ids ───────────────────────────────────
+
+    [Fact]
+    public async Task GetEnrolledIds_EmptyYear_ReturnsEmptyArray()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+        var cookies = await LoginAsAdminAsync(client);
+
+        var yearId = await SeedAcademicYearAsync(client, cookies, "2025-EI1-" + Guid.NewGuid().ToString("N")[..6]);
+
+        var response = await client.SendAsync(
+            Get($"/api/enrollments/enrolled-ids?academicYearId={yearId}", cookies));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        Assert.Equal(JsonValueKind.Array, body.ValueKind);
+        Assert.Equal(0, body.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task GetEnrolledIds_AfterEnroll_ReturnsStudentId()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+        var cookies = await LoginAsAdminAsync(client);
+
+        var (_, sectionAId, _) = await SeedGradeWithTwoSectionsAsync(client, cookies,
+            "Grade 5-EI2-" + Guid.NewGuid().ToString("N")[..6]);
+        var yearId = await SeedAcademicYearAsync(client, cookies, "2025-EI2-" + Guid.NewGuid().ToString("N")[..6]);
+        var studentId = await SeedStudentAsync(client, cookies, "Lily", "Adams");
+
+        await client.SendAsync(Post($"/api/sections/{sectionAId}/enrollments", cookies,
+            new { studentId, academicYearId = yearId }));
+
+        var response = await client.SendAsync(
+            Get($"/api/enrollments/enrolled-ids?academicYearId={yearId}", cookies));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        Assert.Equal(1, body.GetArrayLength());
+        Assert.Equal(studentId, body[0].GetString());
+    }
+
+    [Fact]
+    public async Task GetEnrolledIds_Unauthenticated_Returns401()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync($"/api/enrollments/enrolled-ids?academicYearId={Guid.NewGuid()}");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     // ─── Auth gates ───────────────────────────────────────────────────────────
 
     [Fact]

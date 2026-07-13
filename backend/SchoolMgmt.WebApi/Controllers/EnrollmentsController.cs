@@ -10,6 +10,14 @@ namespace SchoolMgmt.WebApi.Controllers;
 [Authorize(Roles = "Admin")]
 public class EnrollmentsController(EnrollmentService service) : ControllerBase
 {
+    [HttpGet("enrolled-ids")]
+    public async Task<IActionResult> GetEnrolledIds(
+        [FromQuery] Guid academicYearId, CancellationToken ct)
+    {
+        var ids = await service.GetEnrolledStudentIdsAsync(academicYearId, ct);
+        return Ok(ids);
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Transfer(
         Guid id, TransferEnrollmentRequest request, CancellationToken ct)

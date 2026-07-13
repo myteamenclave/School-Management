@@ -67,6 +67,10 @@ public class EnrollmentService(
         return ToDto(loaded!);
     }
 
+    public Task<List<Guid>> GetEnrolledStudentIdsAsync(
+        Guid academicYearId, CancellationToken ct = default) =>
+        enrollmentRepository.GetEnrolledStudentIdsForYearAsync(academicYearId, ct);
+
     public async Task DeleteAsync(Guid enrollmentId, CancellationToken ct = default)
     {
         var enrollment = await enrollmentRepository.GetByIdAsync(enrollmentId, ct)
