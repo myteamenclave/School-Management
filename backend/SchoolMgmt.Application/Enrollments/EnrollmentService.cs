@@ -67,6 +67,15 @@ public class EnrollmentService(
         return ToDto(loaded!);
     }
 
+    public async Task<List<EnrollmentDto>> GetByStudentAsync(
+        Guid studentId, CancellationToken ct = default)
+    {
+        _ = await studentRepository.GetByIdAsync(studentId, ct)
+            ?? throw new NotFoundException("Student not found.");
+        var enrollments = await enrollmentRepository.GetByStudentIdAsync(studentId, ct);
+        return enrollments.Select(ToDto).ToList();
+    }
+
     public Task<List<Guid>> GetEnrolledStudentIdsAsync(
         Guid academicYearId, CancellationToken ct = default) =>
         enrollmentRepository.GetEnrolledStudentIdsForYearAsync(academicYearId, ct);

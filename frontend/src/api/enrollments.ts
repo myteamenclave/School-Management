@@ -30,6 +30,8 @@ export const ENROLLMENT_KEYS = {
     ['enrollments', 'section', sectionId, academicYearId] as const,
   enrolledIds: (academicYearId: string) =>
     ['enrollments', 'enrolled-ids', academicYearId] as const,
+  byStudent: (studentId: string) =>
+    ['enrollments', 'student', studentId] as const,
 }
 
 export const enrollmentsApi = {
@@ -43,6 +45,11 @@ export const enrollmentsApi = {
   getEnrolledIds: (academicYearId: string) =>
     api
       .get<string[]>('/enrollments/enrolled-ids', { params: { academicYearId } })
+      .then((r) => r.data),
+
+  getByStudentId: (studentId: string) =>
+    api
+      .get<EnrollmentDto[]>('/enrollments', { params: { studentId } })
       .then((r) => r.data),
 
   enroll: (sectionId: string, body: CreateEnrollmentRequest) =>

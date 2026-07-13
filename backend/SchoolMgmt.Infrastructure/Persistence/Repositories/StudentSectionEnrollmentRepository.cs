@@ -43,4 +43,14 @@ internal sealed class StudentSectionEnrollmentRepository(AppDbContext context)
             .Where(e => e.AcademicYearId == academicYearId)
             .Select(e => e.StudentId)
             .ToListAsync(ct);
+
+    public Task<List<StudentSectionEnrollment>> GetByStudentIdAsync(
+        Guid studentId, CancellationToken ct = default) =>
+        DbSet
+            .Include(e => e.Student)
+            .Include(e => e.Section).ThenInclude(s => s.Grade)
+            .Include(e => e.AcademicYear)
+            .Where(e => e.StudentId == studentId)
+            .OrderByDescending(e => e.AcademicYear.StartDate)
+            .ToListAsync(ct);
 }

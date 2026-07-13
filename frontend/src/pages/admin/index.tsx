@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { AcademicYearsPage } from './academic-years/AcademicYearsPage'
 import { GradesPage } from './grades/GradesPage'
 import { StudentsPage } from './students/StudentsPage'
+import { StudentDetailPage } from './students/StudentDetailPage'
 import { TeachersPage } from './teachers/TeachersPage'
 import { TeacherDetailPage } from './teachers/TeacherDetailPage'
 import { SubjectsPage } from './subjects/SubjectsPage'
@@ -14,6 +15,7 @@ export function AdminRoutes() {
       <Route path="academic-years" element={<AcademicYearsPage />} />
       <Route path="grades" element={<GradesPage />} />
       <Route path="students" element={<StudentsPage />} />
+      <Route path="students/:id" element={<StudentDetailPage />} />
       <Route path="teachers" element={<TeachersPage />} />
       <Route path="teachers/:id" element={<TeacherDetailPage />} />
       <Route path="subjects" element={<SubjectsPage />} />

@@ -18,6 +18,14 @@ public class EnrollmentsController(EnrollmentService service) : ControllerBase
         return Ok(ids);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetByStudent(
+        [FromQuery] Guid studentId, CancellationToken ct)
+    {
+        var enrollments = await service.GetByStudentAsync(studentId, ct);
+        return Ok(enrollments);
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Transfer(
         Guid id, TransferEnrollmentRequest request, CancellationToken ct)

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { keepPreviousData } from '@tanstack/react-query'
-import { Plus, Search, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Search, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '../../../components/ui/tabs'
@@ -14,7 +15,6 @@ import {
   TableRow,
 } from '../../../components/ui/table'
 import { CreateStudentModal } from './components/CreateStudentModal'
-import { EditStudentModal } from './components/EditStudentModal'
 import { studentsApi, STUDENT_KEYS } from '../../../api/students'
 import type { ListStudentsParams } from '../../../api/students'
 
@@ -38,12 +38,12 @@ function StatusBadge({ status }: { status: string }) {
 
 export function StudentsPage() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [tab, setTab] = useState<EnrollmentTab>('Active')
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
   const [createOpen, setCreateOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -128,7 +128,7 @@ export function StudentsPage() {
                   <TableHead>Gender</TableHead>
                   <TableHead>Enrolled</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-16" />
+                  <TableHead className="w-14" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -162,9 +162,10 @@ export function StudentsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => setEditingId(student.id)}
+                          onClick={() => navigate(`/admin/students/${student.id}`)}
+                          title="View details"
                         >
-                          <Pencil size={14} />
+                          <Eye size={14} />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -204,11 +205,6 @@ export function StudentsPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreated={() => queryClient.invalidateQueries({ queryKey: ['students'] })}
-      />
-      <EditStudentModal
-        studentId={editingId}
-        onClose={() => setEditingId(null)}
-        onUpdated={() => queryClient.invalidateQueries({ queryKey: ['students'] })}
       />
     </div>
   )
