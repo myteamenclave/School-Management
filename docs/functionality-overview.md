@@ -37,13 +37,13 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
 - Teacher management (Admin creates/manages teacher accounts — name, contact, assigned subjects/classes)
   - [x] Backend
   - [x] Frontend
-- Class/section assignment (students to classes, teachers to subjects/classes)
+- Class/section assignment (students to classes, teachers to subjects/classes) — [idea doc](ideas/09-class-section-assignment.md)
+  - [ ] Backend
+  - [ ] Frontend
+- Fee structure templates (installments, discounts, scholarships) — [idea doc](ideas/07-fee-structure-templates.md)
   - [x] Backend
   - [x] Frontend
-- Fee structure templates (installments, discounts, scholarships) — [idea doc](ideas/07-fee-structure-templates.md)
-  - [~] Backend
-  - [~] Frontend
-- Fee invoicing
+- Fee invoicing — [idea doc](ideas/08-fee-invoicing.md)
   - [ ] Backend
   - [ ] Frontend
 - Financial audit trail (who changed/collected what, when)
