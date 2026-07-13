@@ -51,7 +51,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Sign In' }))
 
     await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalledWith('admin@test.com', 'Passw0rd!')
+      expect(mockLogin).toHaveBeenCalledWith('admin@test.com', 'Passw0rd!', false)
     })
   })
 

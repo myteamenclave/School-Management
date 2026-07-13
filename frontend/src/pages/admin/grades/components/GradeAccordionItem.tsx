@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Check, X, Plus, Pencil, Trash2 } from 'lucide-react'
+import { SectionRosterSheet } from './SectionRosterSheet'
 import {
   AccordionItem,
   AccordionTrigger,
@@ -16,7 +17,7 @@ import {
 } from '../../../../components/ui/tooltip'
 import { Button } from '../../../../components/ui/button'
 import { SectionChip } from './SectionChip'
-import type { GradeDto } from '../../../../api/grades'
+import type { GradeDto, SectionDto } from '../../../../api/grades'
 import { gradesApi, GRADE_KEYS } from '../../../../api/grades'
 
 interface GradeAccordionItemProps {
@@ -29,6 +30,7 @@ export function GradeAccordionItem({ grade, onEdit, onDelete }: GradeAccordionIt
   const queryClient = useQueryClient()
   const [addingSectionOpen, setAddingSectionOpen] = useState(false)
   const [newSectionName, setNewSectionName] = useState('')
+  const [rosterSection, setRosterSection] = useState<SectionDto | null>(null)
 
   const addSectionMutation = useMutation({
     mutationFn: (name: string) => gradesApi.addSection(grade.id, { name }),
@@ -41,6 +43,7 @@ export function GradeAccordionItem({ grade, onEdit, onDelete }: GradeAccordionIt
   })
 
   return (
+    <>
     <AccordionItem value={grade.id} className="rounded-lg border border-border bg-card px-4">
       <AccordionTrigger className="hover:no-underline">
         <div className="flex items-center gap-3">
@@ -56,7 +59,12 @@ export function GradeAccordionItem({ grade, onEdit, onDelete }: GradeAccordionIt
           {/* Section chips row */}
           <div className="flex flex-wrap items-center gap-2">
             {grade.sections.map((section) => (
-              <SectionChip key={section.id} section={section} gradeId={grade.id} />
+              <SectionChip
+                key={section.id}
+                section={section}
+                gradeId={grade.id}
+                onRoster={() => setRosterSection(section)}
+              />
             ))}
 
             {addingSectionOpen ? (
@@ -130,5 +138,11 @@ export function GradeAccordionItem({ grade, onEdit, onDelete }: GradeAccordionIt
         </div>
       </AccordionContent>
     </AccordionItem>
+
+    <SectionRosterSheet
+      section={rosterSection}
+      onClose={() => setRosterSection(null)}
+    />
+    </>
   )
 }

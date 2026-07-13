@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Check, X, Trash2 } from 'lucide-react'
+import { Check, X, Trash2, Users } from 'lucide-react'
 import { Button } from '../../../../components/ui/button'
 import type { SectionDto } from '../../../../api/grades'
 import { gradesApi, GRADE_KEYS } from '../../../../api/grades'
@@ -9,9 +9,10 @@ import { gradesApi, GRADE_KEYS } from '../../../../api/grades'
 interface SectionChipProps {
   section: SectionDto
   gradeId: string
+  onRoster?: () => void
 }
 
-export function SectionChip({ section, gradeId }: SectionChipProps) {
+export function SectionChip({ section, gradeId, onRoster }: SectionChipProps) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(section.name)
@@ -84,11 +85,24 @@ export function SectionChip({ section, gradeId }: SectionChipProps) {
   }
 
   return (
-    <button
-      onClick={() => setEditing(true)}
-      className="inline-flex h-7 items-center rounded-full border border-border bg-muted px-3 text-sm text-foreground hover:bg-accent transition-colors"
-    >
-      {section.name}
-    </button>
+    <span className="group inline-flex items-center gap-0.5">
+      <button
+        onClick={() => setEditing(true)}
+        className="inline-flex h-7 items-center rounded-full border border-border bg-muted px-3 text-sm text-foreground hover:bg-accent transition-colors"
+      >
+        {section.name}
+      </button>
+      {onRoster && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => { e.stopPropagation(); onRoster() }}
+          title="View roster"
+        >
+          <Users size={13} />
+        </Button>
+      )}
+    </span>
   )
 }

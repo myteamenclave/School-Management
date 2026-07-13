@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { keepPreviousData } from '@tanstack/react-query'
-import { Plus, Search, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Search, Pencil, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '../../../components/ui/tabs'
@@ -41,6 +42,7 @@ function StatusBadge({ isActive }: { isActive: boolean }) {
 
 export function TeachersPage() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [tab, setTab] = useState<StatusTab>('Active')
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -127,7 +129,7 @@ export function TeachersPage() {
                   <TableHead>Phone</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-16" />
+                  <TableHead className="w-24" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -161,13 +163,24 @@ export function TeachersPage() {
                         <StatusBadge isActive={teacher.isActive} />
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditingId(teacher.id)}
-                        >
-                          <Pencil size={14} />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => navigate(`/admin/teachers/${teacher.id}`)}
+                            title="View details"
+                          >
+                            <Eye size={14} />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingId(teacher.id)}
+                            title="Quick edit"
+                          >
+                            <Pencil size={14} />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
