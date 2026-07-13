@@ -38,8 +38,8 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
   - [x] Backend
   - [x] Frontend
 - Class/section assignment (students to classes, teachers to subjects/classes) — [idea doc](ideas/09-class-section-assignment.md)
-  - [ ] Backend
-  - [ ] Frontend
+  - [x] Backend
+  - [x] Frontend
 - Fee structure templates (installments, discounts, scholarships) — [idea doc](ideas/07-fee-structure-templates.md)
   - [x] Backend
   - [x] Frontend
