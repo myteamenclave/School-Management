@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
-import { ChevronRight, AlertTriangle } from 'lucide-react'
+import { ChevronRight, AlertTriangle, Lock } from 'lucide-react'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
@@ -23,6 +23,7 @@ import type { FeeTemplateDto } from '../../../api/feeTemplates'
 import { LineItemsTab } from './components/LineItemsTab'
 import { InstallmentsTab } from './components/InstallmentsTab'
 import { DiscountRulesTab } from './components/DiscountRulesTab'
+import { InvoicingTab } from './components/InvoicingTab'
 
 function extractError(err: unknown): string {
   if (isAxiosError(err) && err.response?.data?.error) return err.response.data.error
@@ -260,6 +261,13 @@ export function FeeTemplatePage() {
         </div>
       )}
 
+      {template?.isFrozen && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300">
+          <Lock size={15} className="shrink-0" />
+          This template is frozen. At least one invoice has been issued — line items, installments, and discount rules can no longer be modified.
+        </div>
+      )}
+
       <TemplateHeaderSection
         template={template}
         isEditMode={isEditMode}
@@ -279,6 +287,7 @@ export function FeeTemplatePage() {
           <TabsTrigger value="discount-rules">
             Discount Rules {discountRulesDirty && <span className="ml-1 text-amber-500">●</span>}
           </TabsTrigger>
+          <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
         </TabsList>
 
         <TabsContent value="line-items">
@@ -304,6 +313,9 @@ export function FeeTemplatePage() {
             onDirtyChange={setDiscountRulesDirty}
             templateId={id!}
           />
+        </TabsContent>
+        <TabsContent value="invoicing">
+          {template && <InvoicingTab template={template} />}
         </TabsContent>
       </Tabs>
 
