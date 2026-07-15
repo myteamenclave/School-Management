@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { BookMarked, BookOpen, CalendarDays, GraduationCap, LayoutDashboard, Layers, LogOut, Receipt, UsersRound } from 'lucide-react'
+import { BookMarked, BookOpen, CalendarDays, FileText, GraduationCap, LayoutDashboard, Layers, LogOut, Receipt, UsersRound } from 'lucide-react'
 import { authApi } from '../api/auth'
 import { useAuthStore } from '../store/auth.store'
 import type { AuthUser } from '../store/auth.store'
@@ -52,6 +52,12 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Fee Templates',
     to: '/admin/fee-templates',
     icon: <Receipt size={18} />,
+    roles: ['Admin'],
+  },
+  {
+    label: 'Fee Invoices',
+    to: '/admin/fee-invoices',
+    icon: <FileText size={18} />,
     roles: ['Admin'],
   },
 ]

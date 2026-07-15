@@ -8,6 +8,8 @@ import { TeacherDetailPage } from './teachers/TeacherDetailPage'
 import { SubjectsPage } from './subjects/SubjectsPage'
 import { FeeTemplatesPage } from './fee-templates/FeeTemplatesPage'
 import { FeeTemplatePage } from './fee-templates/FeeTemplatePage'
+import { FeeInvoicesPage } from './fee-invoices/FeeInvoicesPage'
+import { FeeInvoicePage } from './fee-invoices/FeeInvoicePage'
 
 export function AdminRoutes() {
   return (
@@ -21,6 +23,8 @@ export function AdminRoutes() {
       <Route path="subjects" element={<SubjectsPage />} />
       <Route path="fee-templates" element={<FeeTemplatesPage />} />
       <Route path="fee-templates/:id" element={<FeeTemplatePage />} />
+      <Route path="fee-invoices" element={<FeeInvoicesPage />} />
+      <Route path="fee-invoices/:id" element={<FeeInvoicePage />} />
     </Routes>
   )
 }
