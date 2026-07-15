@@ -14,6 +14,7 @@ using SchoolMgmt.Application.Enrollments;
 using SchoolMgmt.Application.FeeTemplates;
 using SchoolMgmt.Application.Subjects;
 using SchoolMgmt.Application.Teachers;
+using SchoolMgmt.Application.FeeInvoices;
 using SchoolMgmt.Application.TeacherAssignments;
 using SchoolMgmt.Infrastructure.Persistence.Repositories;
 
@@ -30,6 +31,7 @@ public static class DependencyInjection
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<StudentOptions>(configuration.GetSection(StudentOptions.SectionName));
         services.Configure<TeacherOptions>(configuration.GetSection(TeacherOptions.SectionName));
+        services.Configure<InvoiceOptions>(configuration.GetSection(InvoiceOptions.SectionName));
 
         services.AddHttpContextAccessor();
         services.AddScoped<ITenantProvider, HttpContextTenantProvider>(); // replaces StaticTenantProvider (specs/01) — see specs/02-implement-auth.md
@@ -47,6 +49,9 @@ public static class DependencyInjection
         services.AddScoped<IFeeTemplateRepository, FeeTemplateRepository>();
         services.AddScoped<IStudentSectionEnrollmentRepository, StudentSectionEnrollmentRepository>();
         services.AddScoped<ITeacherSectionSubjectRepository, TeacherSectionSubjectRepository>();
+        services.AddScoped<IStudentFeeAssignmentRepository, StudentFeeAssignmentRepository>();
+        services.AddScoped<IStudentDiscountAssignmentRepository, StudentDiscountAssignmentRepository>();
+        services.AddScoped<IFeeInvoiceRepository, FeeInvoiceRepository>();
 
         services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
