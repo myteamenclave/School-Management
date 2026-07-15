@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '../../../components/ui/select'
 import { StudentSectionAssignmentsTab } from './components/StudentSectionAssignmentsTab'
+import { FeeAssignmentTab } from './components/FeeAssignmentTab'
 import { studentsApi, STUDENT_KEYS } from '../../../api/students'
 
 const detailSchema = z.object({
@@ -259,6 +260,7 @@ export function StudentDetailPage() {
         <TabsList className="mb-6">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="assignments">Section Assignments</TabsTrigger>
+          <TabsTrigger value="fee-assignment">Fee Assignment</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details">
@@ -267,6 +269,10 @@ export function StudentDetailPage() {
 
         <TabsContent value="assignments">
           <StudentSectionAssignmentsTab studentId={id!} />
+        </TabsContent>
+
+        <TabsContent value="fee-assignment">
+          <FeeAssignmentTab studentId={id!} />
         </TabsContent>
       </Tabs>
     </div>
