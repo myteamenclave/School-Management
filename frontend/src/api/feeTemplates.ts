@@ -48,6 +48,7 @@ export interface FeeTemplateDto {
   gradeName: string
   totalAmount: number
   isActive: boolean
+  isFrozen: boolean
   createdAt: string
   updatedAt: string | null
   lineItems: FeeLineItemDto[]
