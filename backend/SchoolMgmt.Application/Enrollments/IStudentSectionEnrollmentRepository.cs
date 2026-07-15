@@ -19,4 +19,7 @@ public interface IStudentSectionEnrollmentRepository : IRepository<StudentSectio
 
     Task<List<StudentSectionEnrollment>> GetByStudentIdAsync(
         Guid studentId, CancellationToken ct = default);
+
+    Task<List<StudentSectionEnrollment>> GetByGradeAndYearAsync(
+        Guid gradeId, Guid academicYearId, CancellationToken ct = default);
 }
