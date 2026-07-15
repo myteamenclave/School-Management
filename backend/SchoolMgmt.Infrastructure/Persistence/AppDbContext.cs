@@ -32,6 +32,11 @@ public class AppDbContext(
     public DbSet<DiscountRule> DiscountRules => Set<DiscountRule>();
     public DbSet<StudentSectionEnrollment> StudentSectionEnrollments => Set<StudentSectionEnrollment>();
     public DbSet<TeacherSectionSubject> TeacherSectionSubjects => Set<TeacherSectionSubject>();
+    public DbSet<StudentFeeAssignment> StudentFeeAssignments => Set<StudentFeeAssignment>();
+    public DbSet<StudentDiscountAssignment> StudentDiscountAssignments => Set<StudentDiscountAssignment>();
+    public DbSet<FeeInvoice> FeeInvoices => Set<FeeInvoice>();
+    public DbSet<FeeInvoiceLineItem> FeeInvoiceLineItems => Set<FeeInvoiceLineItem>();
+    public DbSet<FeeInvoiceInstallment> FeeInvoiceInstallments => Set<FeeInvoiceInstallment>();
 
     private static readonly MethodInfo SetTenantFilterMethod =
         typeof(AppDbContext).GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!;
