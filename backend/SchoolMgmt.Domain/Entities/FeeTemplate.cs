@@ -11,6 +11,7 @@ public class FeeTemplate : BaseEntity, ITenantScoped
     public Grade Grade { get; set; } = null!;
     public string Name { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+    public bool IsFrozen { get; set; } = false;
 
     private readonly List<FeeLineItem> _lineItems = [];
     public IReadOnlyList<FeeLineItem> LineItems => _lineItems.AsReadOnly();
