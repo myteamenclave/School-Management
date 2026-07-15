@@ -74,6 +74,11 @@ public class FeeTemplateService(
         var template = await repository.GetByIdWithChildrenAsync(id, ct)
             ?? throw new NotFoundException("Fee template not found.");
 
+        if (template.IsFrozen)
+            throw new DomainException(
+                "This template is frozen because one or more invoices have been issued from it. " +
+                "Line items, installments, and discount rules cannot be modified.");
+
         var existingById = template.LineItems.ToDictionary(li => li.Id);
         var requestedIds = request.Items
             .Where(i => i.Id.HasValue)
@@ -131,6 +136,11 @@ public class FeeTemplateService(
         var template = await repository.GetByIdWithChildrenAsync(id, ct)
             ?? throw new NotFoundException("Fee template not found.");
 
+        if (template.IsFrozen)
+            throw new DomainException(
+                "This template is frozen because one or more invoices have been issued from it. " +
+                "Line items, installments, and discount rules cannot be modified.");
+
         if (request.Items.Count > 0)
         {
             var sum = request.Items.Sum(i => i.Percentage);
@@ -163,6 +173,11 @@ public class FeeTemplateService(
     {
         var template = await repository.GetByIdWithChildrenAsync(id, ct)
             ?? throw new NotFoundException("Fee template not found.");
+
+        if (template.IsFrozen)
+            throw new DomainException(
+                "This template is frozen because one or more invoices have been issued from it. " +
+                "Line items, installments, and discount rules cannot be modified.");
 
         var validLineItemIds = template.LineItems.Select(li => li.Id).ToHashSet();
         foreach (var input in request.Items.Where(i => i.FeeLineItemId.HasValue))
