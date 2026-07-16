@@ -79,16 +79,21 @@ function TemplateHeaderSection({
   template,
   isEditMode,
   onEnterEdit,
+  onExitEdit,
   onDirtyChange,
+  hasDirtyContent,
   templateId,
 }: {
   template: FeeTemplateDto | undefined
   isEditMode: boolean
   onEnterEdit: () => void
+  onExitEdit: () => void
   onDirtyChange: (dirty: boolean) => void
+  hasDirtyContent: boolean
   templateId: string
 }) {
   const queryClient = useQueryClient()
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false)
   const { control, register, handleSubmit, reset, formState: { errors, isDirty } } =
     useForm<HeaderFormValues>({
       resolver: zodResolver(headerSchema),
@@ -124,19 +129,22 @@ function TemplateHeaderSection({
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
             <h2 className="text-xl font-semibold text-foreground">{template?.name ?? '…'}</h2>
-            <div className="flex items-center gap-2 flex-wrap">
-              {template && (
-                <>
-                  <span className="inline-flex items-center rounded-md bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                    {template.gradeName}
-                  </span>
-                  <span className="inline-flex items-center rounded-md bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                    {template.academicYearName}
-                  </span>
+            {template && (
+              <div className="flex flex-col gap-1.5 mt-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-24">Grade</span>
+                  <span className="text-sm font-medium text-foreground">{template.gradeName}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-24">Academic Year</span>
+                  <span className="text-sm font-medium text-foreground">{template.academicYearName}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-24">Status</span>
                   <StatusBadge isActive={template.isActive} />
-                </>
-              )}
-            </div>
+                </div>
+              </div>
+            )}
           </div>
           <Button size="sm" variant="outline" onClick={onEnterEdit}>Edit</Button>
         </div>
@@ -187,8 +195,34 @@ function TemplateHeaderSection({
           <Button type="submit" size="sm" disabled={headerMutation.isPending}>
             {headerMutation.isPending ? 'Saving…' : 'Save Header'}
           </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={headerMutation.isPending}
+            onClick={() => {
+              if (hasDirtyContent) {
+                setDiscardConfirmOpen(true)
+              } else {
+                reset()
+                onExitEdit()
+              }
+            }}
+          >
+            Discard
+          </Button>
         </div>
       </form>
+
+      <ConfirmDiscardDialog
+        open={discardConfirmOpen}
+        onConfirm={() => {
+          setDiscardConfirmOpen(false)
+          reset()
+          onExitEdit()
+        }}
+        onCancel={() => setDiscardConfirmOpen(false)}
+      />
     </div>
   )
 }
@@ -207,6 +241,7 @@ export function FeeTemplatePage() {
   const isDirty = headerDirty || lineItemsDirty || installmentsDirty || discountRulesDirty
 
   const enterEditMode = () => setSearchParams({ edit: 'true' })
+  const exitEditMode = () => setSearchParams({})
 
   const { data: template, isLoading, isError } = useQuery({
     queryKey: FEE_TEMPLATE_KEYS.detail(id!),
@@ -272,7 +307,9 @@ export function FeeTemplatePage() {
         template={template}
         isEditMode={isEditMode}
         onEnterEdit={enterEditMode}
+        onExitEdit={exitEditMode}
         onDirtyChange={setHeaderDirty}
+        hasDirtyContent={isDirty}
         templateId={id!}
       />
 

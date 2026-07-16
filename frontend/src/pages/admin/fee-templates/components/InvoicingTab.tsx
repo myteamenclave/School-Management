@@ -39,8 +39,8 @@ export function InvoicingTab({ template }: InvoicingTabProps) {
           <h3 className="text-base font-semibold text-foreground">Grade Assignment</h3>
           <p className="text-sm text-muted-foreground mt-1">
             Assign this template to all students enrolled in{' '}
-            <span className="font-medium text-foreground">{template.gradeName}</span> for{' '}
-            <span className="font-medium text-foreground">{template.academicYearName}</span> who
+            <span className="font-medium text-foreground">Grade {template.gradeName}</span> for{' '}
+            <span className="font-medium text-foreground">year {template.academicYearName}</span> who
             don't yet have a fee assignment for this year.
           </p>
         </div>

@@ -170,45 +170,51 @@ export function FeeInvoicesPage() {
           </TabsList>
         </Tabs>
 
-        <div className="flex items-center gap-2">
-          <Select
-            value={yearFilter ?? 'all'}
-            onValueChange={(v) => {
-              const val = v === 'all' ? null : v
-              setYearFilter(val)
-              setPage(1)
-              setSearchParams(val ? { academicYearId: val, ...(gradeFilter ? { gradeId: gradeFilter } : {}) } : {})
-            }}
-          >
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="All Years" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Years</SelectItem>
-              {years.map((y) => (
-                <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">Year</span>
+            <Select
+              value={yearFilter ?? 'all'}
+              onValueChange={(v) => {
+                const val = v === 'all' ? null : v
+                setYearFilter(val)
+                setPage(1)
+                setSearchParams(val ? { academicYearId: val, ...(gradeFilter ? { gradeId: gradeFilter } : {}) } : {})
+              }}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="All Years" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {years.map((y) => (
+                  <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select
-            value={gradeFilter ?? 'all'}
-            onValueChange={(v) => {
-              const val = v === 'all' ? null : v
-              setGradeFilter(val)
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="All Grades" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Grades</SelectItem>
-              {grades.map((g) => (
-                <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">Grade</span>
+            <Select
+              value={gradeFilter ?? 'all'}
+              onValueChange={(v) => {
+                const val = v === 'all' ? null : v
+                setGradeFilter(val)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="All Grades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Grades</SelectItem>
+                {grades.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 

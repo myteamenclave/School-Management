@@ -41,11 +41,13 @@ only writes `DueDate` and `Amount`, leaving payment columns null.
       percentages only; Admin enters actual calendar dates when generating.
 - [x] Cancelling an Issued invoice does not unfreeze the template — freeze is
       permanent once the first invoice from a template is Issued.
-- [ ] Grade broadcast assigns students based on their current active enrollment
-      in that grade for the given academic year — confirm the enrollment model
-      before implementing the broadcast query.
-- [ ] A student's discount assignments are scoped per academic year (not global)
-      — so a scholarship applied in Year 1 doesn't automatically carry to Year 2.
+- [x] Grade broadcast assigns students based on their current active enrollment
+      in that grade for the given academic year — confirmed: `StudentSectionEnrollment`
+      with unique `(StudentId, AcademicYearId)` index is the source; query joins
+      on `SectionId → Section.GradeId` to find all students enrolled in a grade.
+- [x] A student's discount assignments are scoped per academic year (not global)
+      — confirmed: `StudentDiscountAssignment` carries `AcademicYearId`; no
+      automatic carry-forward between years.
 
 ## MVP Scope
 
@@ -98,12 +100,15 @@ only writes `DueDate` and `Amount`, leaving payment columns null.
 - **Discount stacking rules / precedence** — discount rules are applied
   independently; no stacking logic in this phase
 
-## Open Questions
+## Open Questions (Resolved)
 
-- When grade broadcast runs, does it overwrite existing StudentFeeAssignments or
-  skip students who already have one? (Suggested: skip to preserve manual
-  overrides; warn Admin how many were skipped.)
-- Should generating invoices be idempotent per student? (Suggested: yes — if a
-  Draft already exists, regenerate replaces it; if Issued exists, skip and warn.)
-- Invoice numbering: auto-generated code (e.g., `INV-2025-000001`) or
-  Admin-assigned? (Suggested: auto-generated, same pattern as StudentCode.)
+- **Grade broadcast collision** — Skip students who already have a
+  `StudentFeeAssignment` for that academic year (preserves any manual override);
+  return a warning count of how many were skipped. ✓ Decided: Option A (skip + warn).
+- **Draft regeneration** — If a Draft already exists for a student, **block** the
+  generation and require the admin to cancel it first. Do not auto-replace.
+  Issued invoices are always skipped with a warning. ✓ Decided: Block (Option B).
+- **Invoice numbering** — Auto-generated code (e.g., `INV-2025-000001`), same
+  `IOptions<InvoiceOptions>` + configurable retry pattern as `StudentCode`. The
+  generator interface (`IInvoiceCodeGenerator`) is injected so the mechanism can
+  be swapped without touching service logic. ✓ Decided: auto-generated, swappable.

@@ -79,10 +79,15 @@ export function GenerateInvoicesDialog({ open, template, onClose }: GenerateInvo
           <DialogTitle>Generate Invoices — {template.name}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span>{template.gradeName}</span>
-          <span>·</span>
-          <span>{template.academicYearName}</span>
+        <div className="flex flex-col gap-1 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground w-24">Grade</span>
+            <span className="font-medium text-foreground">{template.gradeName}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground w-24">Academic Year</span>
+            <span className="font-medium text-foreground">{template.academicYearName}</span>
+          </div>
         </div>
 
         <form

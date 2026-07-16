@@ -44,8 +44,8 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
   - [x] Backend
   - [x] Frontend
 - Fee invoicing — [idea doc](ideas/08-fee-invoicing.md)
-  - [ ] Backend
-  - [ ] Frontend
+  - [x] Backend (spec: [12-implement-fee-invoicing](../specs/12-implement-fee-invoicing.md))
+  - [~] Frontend (spec: [13-implement-fee-invoicing-frontend](../specs/13-implement-fee-invoicing-frontend.md))
 - Financial audit trail (who changed/collected what, when)
   - [ ] Backend
   - [ ] Frontend
