@@ -91,6 +91,15 @@
 | `InstallmentInput` | `feeTemplates.ts` | `name`, `percentage`, `displayOrder` |
 | `DiscountRuleInput` | `feeTemplates.ts` | `name`, `ruleType`, `value`, `feeLineItemId?` (absent = invoice total) |
 | `ListFeeTemplatesParams` | `feeTemplates.ts` | `isActive: boolean\|null`, `academicYearId\|null`, `gradeId\|null`, `page`, `pageSize` |
+| `attendanceApi` | `attendance.ts` | Thin wrappers: `getSectionRoster(sectionId, date, academicYearId)`, `bulkUpsert(request)`, `getStudentHistory(studentId, academicYearId)`. |
+| `ATTENDANCE_KEYS` | `attendance.ts` | TanStack Query key factory: `{ sectionRoster(sectionId, date, academicYearId), studentHistory(studentId, academicYearId) }`. |
+| `AttendanceStatus` | `attendance.ts` | `'Present' \| 'Late' \| 'Absent' \| 'Excused'` |
+| `ATTENDANCE_STATUSES` | `attendance.ts` | `['Present', 'Late', 'Absent', 'Excused']` — ordered array for dropdowns |
+| `AttendanceRosterEntry` | `attendance.ts` | `studentId`, `studentName`, `studentCode`, `status: AttendanceStatus \| null`, `notes: string \| null` |
+| `SectionAttendanceRoster` | `attendance.ts` | `sectionId`, `sectionName`, `date` (YYYY-MM-DD), `entries: AttendanceRosterEntry[]` |
+| `BulkUpsertAttendanceRequest` | `attendance.ts` | `sectionId`, `academicYearId`, `date`, `entries: AttendanceEntryRequest[]` |
+| `AttendanceEntryRequest` | `attendance.ts` | `studentId`, `status: AttendanceStatus`, `notes?` |
+| `AttendanceHistoryEntry` | `attendance.ts` | `id`, `sectionId`, `sectionName`, `date`, `status`, `notes` |
 
 ## Hooks (`src/hooks/`)
 

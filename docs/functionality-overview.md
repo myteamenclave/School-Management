@@ -45,7 +45,7 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
   - [x] Frontend
 - Fee invoicing — [idea doc](ideas/08-fee-invoicing.md)
   - [x] Backend (spec: [12-implement-fee-invoicing](../specs/12-implement-fee-invoicing.md))
-  - [~] Frontend (spec: [13-implement-fee-invoicing-frontend](../specs/13-implement-fee-invoicing-frontend.md))
+  - [x] Frontend (spec: [13-implement-fee-invoicing-frontend](../specs/13-implement-fee-invoicing-frontend.md))
 - Financial audit trail (who changed/collected what, when)
   - [ ] Backend
   - [ ] Frontend
@@ -71,9 +71,9 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
   - [ ] Frontend
 
 ## Teacher
-- Mark daily attendance
-  - [ ] Backend
-  - [ ] Frontend
+- Mark daily attendance — [idea doc](ideas/11-attendance-marking.md) · [spec](../specs/14-implement-attendance-marking.md)
+  - [~] Backend
+  - [~] Frontend
 - Enter grades per subject/term (lightweight — no weighted GPA logic)
   - [ ] Backend
   - [ ] Frontend
