@@ -11,6 +11,7 @@ namespace SchoolMgmt.WebApi.Controllers;
 public class GradesController(GradeService service) : ControllerBase
 {
     [HttpGet]
+    [Authorize(Roles = "Admin,Teacher")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var grades = await service.GetAllGradesAsync(ct);
@@ -18,6 +19,7 @@ public class GradesController(GradeService service) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Admin,Teacher")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var grade = await service.GetGradeByIdAsync(id, ct);

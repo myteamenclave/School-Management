@@ -11,6 +11,7 @@ namespace SchoolMgmt.WebApi.Controllers;
 public class AcademicYearsController(AcademicYearService service) : ControllerBase
 {
     [HttpGet]
+    [Authorize(Roles = "Admin,Teacher")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var years = await service.GetAllAcademicYearsAsync(ct);
@@ -18,6 +19,7 @@ public class AcademicYearsController(AcademicYearService service) : ControllerBa
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Admin,Teacher")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var year = await service.GetAcademicYearByIdAsync(id, ct);
