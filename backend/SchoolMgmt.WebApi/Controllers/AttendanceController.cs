@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchoolMgmt.Application.Attendance;
@@ -27,7 +26,7 @@ public class AttendanceController(AttendanceService service) : ControllerBase
     public async Task<IActionResult> BulkUpsert(
         [FromBody] BulkUpsertAttendanceRequest request, CancellationToken ct)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = Guid.Parse(User.FindFirstValue("sub")!);
         var result = await service.BulkUpsertAsync(request, userId, ct);
         return Ok(result);
     }
