@@ -1,5 +1,10 @@
-import { Outlet } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
+import { AttendancePage } from './attendance/AttendancePage'
 
 export function TeacherRoutes() {
-  return <Outlet />
+  return (
+    <Routes>
+      <Route path="attendance" element={<AttendancePage />} />
+    </Routes>
+  )
 }

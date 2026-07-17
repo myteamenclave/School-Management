@@ -10,6 +10,7 @@ import { FeeTemplatesPage } from './fee-templates/FeeTemplatesPage'
 import { FeeTemplatePage } from './fee-templates/FeeTemplatePage'
 import { FeeInvoicesPage } from './fee-invoices/FeeInvoicesPage'
 import { FeeInvoicePage } from './fee-invoices/FeeInvoicePage'
+import { AttendanceViewPage } from './attendance/AttendanceViewPage'
 
 export function AdminRoutes() {
   return (
@@ -25,6 +26,7 @@ export function AdminRoutes() {
       <Route path="fee-templates/:id" element={<FeeTemplatePage />} />
       <Route path="fee-invoices" element={<FeeInvoicesPage />} />
       <Route path="fee-invoices/:id" element={<FeeInvoicePage />} />
+      <Route path="attendance" element={<AttendanceViewPage />} />
     </Routes>
   )
 }
