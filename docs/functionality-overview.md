@@ -72,8 +72,8 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
 
 ## Teacher
 - Mark daily attendance — [idea doc](ideas/11-attendance-marking.md) · [spec](../specs/14-implement-attendance-marking.md)
-  - [~] Backend
-  - [~] Frontend
+  - [x] Backend
+  - [x] Frontend
 - Enter grades per subject/term (lightweight — no weighted GPA logic)
   - [ ] Backend
   - [ ] Frontend

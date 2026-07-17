@@ -53,7 +53,7 @@ Concrete technical plans for *how* a feature is actually implemented. **Every fe
 | [specs/11-implement-class-section-assignment-frontend.md](specs/11-implement-class-section-assignment-frontend.md) | Section Roster Sheet (Grades page), `enrolled-ids` backend endpoint, Teacher Detail page with Details + Assignments tabs, `enrollments.ts` + `teacherAssignments.ts` API clients | Implemented |
 | [specs/12-implement-fee-invoicing.md](specs/12-implement-fee-invoicing.md) | 5 new entities (`StudentFeeAssignment`, `StudentDiscountAssignment`, `FeeInvoice`, `FeeInvoiceLineItem`, `FeeInvoiceInstallment`), grade broadcast, draft generation with discount snapshot, Draft→Issued→Cancelled lifecycle, `IsFrozen` template guard, `InvoiceCode` auto-generation | Implemented |
 | [specs/13-implement-fee-invoicing-frontend.md](specs/13-implement-fee-invoicing-frontend.md) | Fee Template Invoicing tab (broadcast + generate), Fee Invoices list + detail pages, Student Detail Fee Assignment tab, `feeAssignments.ts` + `feeInvoices.ts` API clients | Implemented |
-| [specs/14-implement-attendance-marking.md](specs/14-implement-attendance-marking.md) | `AttendanceRecord` entity, `AttendanceStatus` enum, bulk-upsert endpoint (Teacher only), section roster GET, student history GET, Teacher Attendance page, Admin read-only view | Not started |
+| [specs/14-implement-attendance-marking.md](specs/14-implement-attendance-marking.md) | `AttendanceRecord` entity, `AttendanceStatus` enum, bulk-upsert endpoint (Teacher only), section roster GET, student history GET, Teacher Attendance page, Admin read-only view | Implemented |
 
 ### Coding Rules — `.claude/rules/`
 Enforceable coding rules an agent must follow while writing code, not background context.
