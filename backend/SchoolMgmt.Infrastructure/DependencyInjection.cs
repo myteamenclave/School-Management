@@ -17,6 +17,7 @@ using SchoolMgmt.Application.Teachers;
 using SchoolMgmt.Application.FeeInvoices;
 using SchoolMgmt.Application.TeacherAssignments;
 using SchoolMgmt.Application.Attendance;
+using SchoolMgmt.Application.Gradebook;
 using SchoolMgmt.Infrastructure.Persistence.Repositories;
 
 namespace SchoolMgmt.Infrastructure;
@@ -54,6 +55,8 @@ public static class DependencyInjection
         services.AddScoped<IStudentDiscountAssignmentRepository, StudentDiscountAssignmentRepository>();
         services.AddScoped<IFeeInvoiceRepository, FeeInvoiceRepository>();
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
+        services.AddScoped<ISubjectTermGradeRepository, SubjectTermGradeRepository>();
+        services.AddScoped<IGradeScaleBandRepository, GradeScaleBandRepository>();
 
         services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
