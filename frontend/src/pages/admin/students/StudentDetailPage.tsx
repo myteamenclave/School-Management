@@ -19,7 +19,7 @@ import {
 } from '../../../components/ui/select'
 import { StudentSectionAssignmentsTab } from './components/StudentSectionAssignmentsTab'
 import { FeeAssignmentTab } from './components/FeeAssignmentTab'
-import { studentsApi, STUDENT_KEYS, StudentDto } from '../../../api/students'
+import { studentsApi, STUDENT_KEYS, type StudentDto } from '../../../api/students'
 
 const detailSchema = z.object({
   firstName:        z.string().min(1, 'Required').max(100),
