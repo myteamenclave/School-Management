@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -20,7 +19,7 @@ import {
 } from '../../../components/ui/select'
 import { StudentSectionAssignmentsTab } from './components/StudentSectionAssignmentsTab'
 import { FeeAssignmentTab } from './components/FeeAssignmentTab'
-import { studentsApi, STUDENT_KEYS } from '../../../api/students'
+import { studentsApi, STUDENT_KEYS, StudentDto } from '../../../api/students'
 
 const detailSchema = z.object({
   firstName:        z.string().min(1, 'Required').max(100),
@@ -52,44 +51,35 @@ const clampYear = (e: React.FormEvent<HTMLInputElement>) => {
 }
 
 interface StudentDetailsFormProps {
-  studentId: string
+  student: StudentDto
 }
 
-function StudentDetailsForm({ studentId }: StudentDetailsFormProps) {
+function StudentDetailsForm({ student }: StudentDetailsFormProps) {
   const queryClient = useQueryClient()
-
-  const { data: student } = useQuery({
-    queryKey: STUDENT_KEYS.detail(studentId),
-    queryFn: () => studentsApi.getById(studentId),
-  })
 
   const {
     register,
     handleSubmit,
-    reset,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<DetailFormValues>({ resolver: zodResolver(detailSchema) })
-
-  useEffect(() => {
-    if (student) {
-      reset({
-        firstName:        student.firstName,
-        lastName:         student.lastName,
-        dateOfBirth:      student.dateOfBirth,
-        gender:           student.gender as 'Male' | 'Female' | 'Other',
-        enrollmentDate:   student.enrollmentDate,
-        enrollmentStatus: student.enrollmentStatus as 'Active' | 'Transferred' | 'Graduated' | 'Dropped',
-        guardianName:     student.guardianName  ?? '',
-        guardianPhone:    student.guardianPhone ?? '',
-        guardianEmail:    student.guardianEmail ?? '',
-      })
-    }
-  }, [student, reset])
+  } = useForm<DetailFormValues>({
+    resolver: zodResolver(detailSchema),
+    defaultValues: {
+      firstName:        student.firstName,
+      lastName:         student.lastName,
+      dateOfBirth:      student.dateOfBirth,
+      gender:           student.gender as 'Male' | 'Female' | 'Other',
+      enrollmentDate:   student.enrollmentDate,
+      enrollmentStatus: student.enrollmentStatus as 'Active' | 'Transferred' | 'Graduated' | 'Dropped',
+      guardianName:     student.guardianName  ?? '',
+      guardianPhone:    student.guardianPhone ?? '',
+      guardianEmail:    student.guardianEmail ?? '',
+    },
+  })
 
   const mutation = useMutation({
     mutationFn: (data: DetailFormValues) =>
-      studentsApi.update(studentId, {
+      studentsApi.update(student.id, {
         firstName:        data.firstName,
         lastName:         data.lastName,
         dateOfBirth:      data.dateOfBirth,
@@ -102,7 +92,7 @@ function StudentDetailsForm({ studentId }: StudentDetailsFormProps) {
       }),
     onSuccess: () => {
       toast.success('Student updated')
-      queryClient.invalidateQueries({ queryKey: STUDENT_KEYS.detail(studentId) })
+      queryClient.invalidateQueries({ queryKey: STUDENT_KEYS.detail(student.id) })
       queryClient.invalidateQueries({ queryKey: ['students'] })
     },
     onError: (err) => toast.error(extractError(err)),
@@ -110,9 +100,7 @@ function StudentDetailsForm({ studentId }: StudentDetailsFormProps) {
 
   return (
     <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="flex flex-col gap-4 max-w-lg">
-      {student && (
-        <p className="text-sm text-muted-foreground -mt-2">{student.studentCode}</p>
-      )}
+      <p className="text-sm text-muted-foreground -mt-2">{student.studentCode}</p>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
@@ -264,7 +252,7 @@ export function StudentDetailPage() {
         </TabsList>
 
         <TabsContent value="details">
-          <StudentDetailsForm studentId={id!} />
+          <StudentDetailsForm student={student} />
         </TabsContent>
 
         <TabsContent value="assignments">
