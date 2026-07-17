@@ -54,4 +54,7 @@ internal sealed class TeacherRepository(AppDbContext context)
 
         return $"{joiningYear}-{next:D6}";
     }
+
+    public Task<Teacher?> GetByUserIdAsync(Guid userId, CancellationToken ct = default) =>
+        DbSet.FirstOrDefaultAsync(t => t.UserId == userId, ct);
 }

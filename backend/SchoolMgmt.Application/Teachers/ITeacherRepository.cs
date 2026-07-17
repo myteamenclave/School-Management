@@ -11,4 +11,5 @@ public interface ITeacherRepository : IRepository<Teacher>
     Task<Teacher?> GetByIdWithUserAsync(Guid id, CancellationToken ct = default);
 
     Task<string> GetNextTeacherCodeAsync(int joiningYear, CancellationToken ct = default);
+    Task<Teacher?> GetByUserIdAsync(Guid userId, CancellationToken ct = default);
 }

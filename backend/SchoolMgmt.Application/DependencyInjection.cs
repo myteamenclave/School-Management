@@ -11,6 +11,7 @@ using SchoolMgmt.Application.Subjects;
 using SchoolMgmt.Application.Teachers;
 using SchoolMgmt.Application.FeeInvoices;
 using SchoolMgmt.Application.TeacherAssignments;
+using SchoolMgmt.Application.Attendance;
 
 namespace SchoolMgmt.Application;
 
@@ -28,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<EnrollmentService>();
         services.AddScoped<TeacherAssignmentService>();
         services.AddScoped<FeeInvoiceService>();
+        services.AddScoped<AttendanceService>();
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         return services;

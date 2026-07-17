@@ -37,6 +37,7 @@ public class AppDbContext(
     public DbSet<FeeInvoice> FeeInvoices => Set<FeeInvoice>();
     public DbSet<FeeInvoiceLineItem> FeeInvoiceLineItems => Set<FeeInvoiceLineItem>();
     public DbSet<FeeInvoiceInstallment> FeeInvoiceInstallments => Set<FeeInvoiceInstallment>();
+    public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
 
     private static readonly MethodInfo SetTenantFilterMethod =
         typeof(AppDbContext).GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!;
