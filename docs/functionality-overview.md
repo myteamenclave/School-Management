@@ -76,7 +76,7 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
   - [x] Frontend
 - Enter grades per subject/term (lightweight — no weighted GPA logic) — [idea doc](ideas/12-grade-entry.md)
   - [x] Backend (spec: [15-implement-grade-entry](../specs/15-implement-grade-entry.md))
-  - [ ] Frontend
+  - [x] Frontend
 
 ## Explicitly Out of Scope (see "Not Doing" in the source idea doc)
 - Library, transport, hostel, payroll modules
