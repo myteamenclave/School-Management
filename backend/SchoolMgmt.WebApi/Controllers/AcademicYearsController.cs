@@ -7,11 +7,10 @@ namespace SchoolMgmt.WebApi.Controllers;
 
 [ApiController]
 [Route("api/academic-years")]
-[Authorize(Roles = "Admin")]
+[Authorize]
 public class AcademicYearsController(AcademicYearService service) : ControllerBase
 {
     [HttpGet]
-    [Authorize(Roles = "Admin,Teacher")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var years = await service.GetAllAcademicYearsAsync(ct);
@@ -19,7 +18,6 @@ public class AcademicYearsController(AcademicYearService service) : ControllerBa
     }
 
     [HttpGet("{id:guid}")]
-    [Authorize(Roles = "Admin,Teacher")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var year = await service.GetAcademicYearByIdAsync(id, ct);
@@ -27,6 +25,7 @@ public class AcademicYearsController(AcademicYearService service) : ControllerBa
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(CreateAcademicYearRequest request, CancellationToken ct)
     {
         var year = await service.CreateAcademicYearAsync(request, ct);
@@ -34,6 +33,7 @@ public class AcademicYearsController(AcademicYearService service) : ControllerBa
     }
 
     [HttpPut("{yearId:guid}/semesters/{semesterId:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateSemester(Guid yearId, Guid semesterId, UpdateSemesterRequest request, CancellationToken ct)
     {
         var semester = await service.UpdateSemesterAsync(semesterId, request, ct);
@@ -41,6 +41,7 @@ public class AcademicYearsController(AcademicYearService service) : ControllerBa
     }
 
     [HttpPost("{id:guid}/set-current")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SetCurrent(Guid id, CancellationToken ct)
     {
         await service.SetCurrentYearAsync(id, ct);
@@ -48,6 +49,7 @@ public class AcademicYearsController(AcademicYearService service) : ControllerBa
     }
 
     [HttpPost("{yearId:guid}/semesters/{semesterId:guid}/set-current")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SetCurrentSemester(Guid yearId, Guid semesterId, CancellationToken ct)
     {
         await service.SetCurrentSemesterAsync(semesterId, ct);
@@ -55,6 +57,7 @@ public class AcademicYearsController(AcademicYearService service) : ControllerBa
     }
 
     [HttpPost("{id:guid}/archive")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Archive(Guid id, CancellationToken ct)
     {
         await service.ArchiveAcademicYearAsync(id, ct);
