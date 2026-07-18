@@ -238,6 +238,7 @@
 | `AddFeeInvoicing` (`Persistence/Migrations/`) | Creates `StudentFeeAssignments`, `StudentDiscountAssignments`, `FeeInvoices`, `FeeInvoiceLineItems`, `FeeInvoiceInstallments` tables. Adds `IsFrozen` (bool, default false) to `FeeTemplates`. Partial unique index on `FeeInvoices (SchoolId, StudentId, AcademicYearId)` filtered to non-Cancelled status. |
 | `AddAttendanceRecords` (`Persistence/Migrations/`) | Creates `AttendanceRecords` table. `Status` stored as string. Unique index `(SchoolId, StudentId, SectionId, Date)`. All FKs `ON DELETE RESTRICT`. |
 | `AddGradebook` (`Persistence/Migrations/`) | Creates `SubjectTermGrades` and `GradeScaleBands` tables. Grade unique index `(SchoolId, StudentId, SubjectId, SemesterId)`; scores `numeric(5,2)`. Band unique `(SchoolId, Letter)`; seeds A–F bands for the seed school. All grade FKs `ON DELETE RESTRICT`. |
+| `GradebookControllerTests` / `GradeScaleControllerTests` (`IntegrationTests/Gradebook/`) | 18 tests. Gradebook: assigned-teacher bulk upsert computes Term 85.5 + letter B, partial-components null term, re-upsert in place, unassigned-teacher 400, archived-year 400, admin 403 on bulk, roster lists enrolled w/ null scores, student grades across subjects, 401 gates. GradeScale: seeded A–F present, admin CRUD, min>max 400, unknown-id 404, teacher 403, 401. |
 
 ## Tests
 
