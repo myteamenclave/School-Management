@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { BookMarked, BookOpen, CalendarDays, ClipboardList, FileText, GraduationCap, LayoutDashboard, Layers, LogOut, Receipt, UsersRound } from 'lucide-react'
+import { Award, BookMarked, BookOpen, CalendarDays, ClipboardList, FileText, GraduationCap, LayoutDashboard, Layers, LogOut, Receipt, UsersRound } from 'lucide-react'
 import { authApi } from '../api/auth'
 import { useAuthStore } from '../store/auth.store'
 import type { AuthUser } from '../store/auth.store'
@@ -67,9 +67,27 @@ const NAV_ITEMS: NavItem[] = [
     roles: ['Admin'],
   },
   {
+    label: 'Gradebook',
+    to: '/admin/gradebook',
+    icon: <BookOpen size={18} />,
+    roles: ['Admin'],
+  },
+  {
+    label: 'Grade Scale',
+    to: '/admin/grade-scale',
+    icon: <Award size={18} />,
+    roles: ['Admin'],
+  },
+  {
     label: 'Attendance',
     to: '/teacher/attendance',
     icon: <ClipboardList size={18} />,
+    roles: ['Teacher'],
+  },
+  {
+    label: 'Gradebook',
+    to: '/teacher/gradebook',
+    icon: <BookOpen size={18} />,
     roles: ['Teacher'],
   },
 ]

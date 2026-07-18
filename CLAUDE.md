@@ -29,6 +29,7 @@ Canonical record of *why* the project is shaped the way it is. Read these to und
 | [docs/ideas/09-class-section-assignment.md](docs/ideas/09-class-section-assignment.md) | Class/section assignment — StudentSectionEnrollment per year, TeacherSectionSubject flat junction, per-section roster + per-teacher assignment UI |
 | [docs/ideas/10-class-section-assignment-frontend.md](docs/ideas/10-class-section-assignment-frontend.md) | Class/section assignment frontend — Section Roster Sheet in Grades page, Teacher Detail page with Assignments tab, enrolled-ids backend addition |
 | [docs/ideas/11-attendance-marking.md](docs/ideas/11-attendance-marking.md) | Attendance marking — daily roll call per section, Present/Late/Absent/Excused, bulk upsert, teacher UI + admin read-only view |
+| [docs/ideas/12-grade-entry.md](docs/ideas/12-grade-entry.md) | Grade entry per subject/term — fixed Midterm/Final/Coursework components, fixed-weight rollup, auto letter via editable `GradeScale`, teacher bulk-upsert + admin read-only, grade keyed to student+subject+semester (section is provenance) |
 | [docs/functionality-overview.md](docs/functionality-overview.md) | Master goal list / checklist of every functionality across all modules — the index of what's left to build |
 | [docs/design-system.md](docs/design-system.md) | Color palette, typography, design vibe — source of truth before syncing to Claude Design |
 
@@ -54,6 +55,7 @@ Concrete technical plans for *how* a feature is actually implemented. **Every fe
 | [specs/12-implement-fee-invoicing.md](specs/12-implement-fee-invoicing.md) | 5 new entities (`StudentFeeAssignment`, `StudentDiscountAssignment`, `FeeInvoice`, `FeeInvoiceLineItem`, `FeeInvoiceInstallment`), grade broadcast, draft generation with discount snapshot, Draft→Issued→Cancelled lifecycle, `IsFrozen` template guard, `InvoiceCode` auto-generation | Implemented |
 | [specs/13-implement-fee-invoicing-frontend.md](specs/13-implement-fee-invoicing-frontend.md) | Fee Template Invoicing tab (broadcast + generate), Fee Invoices list + detail pages, Student Detail Fee Assignment tab, `feeAssignments.ts` + `feeInvoices.ts` API clients | Implemented |
 | [specs/14-implement-attendance-marking.md](specs/14-implement-attendance-marking.md) | `AttendanceRecord` entity, `AttendanceStatus` enum, bulk-upsert endpoint (Teacher only), section roster GET, student history GET, Teacher Attendance page, Admin read-only view | Implemented |
+| [specs/15-implement-grade-entry.md](specs/15-implement-grade-entry.md) | `SubjectTermGrade` (keyed student+subject+semester, section as provenance) + admin-editable `GradeScaleBand`, `Gradebook` namespace, fixed 30/40/30 weight rollup + server letter mapping, Teacher bulk-upsert + Admin read-only + grade-scale CRUD, Teacher Gradebook page + Admin read-only view + Grade Scale page (`gradebook.ts` API client). Marks API is `api/gradebook` (not `api/grades` — owned by grade-levels) | Implemented |
 
 ### Coding Rules — `.claude/rules/`
 Enforceable coding rules an agent must follow while writing code, not background context.

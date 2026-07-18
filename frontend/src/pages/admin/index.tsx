@@ -11,6 +11,8 @@ import { FeeTemplatePage } from './fee-templates/FeeTemplatePage'
 import { FeeInvoicesPage } from './fee-invoices/FeeInvoicesPage'
 import { FeeInvoicePage } from './fee-invoices/FeeInvoicePage'
 import { AttendanceViewPage } from './attendance/AttendanceViewPage'
+import { GradebookViewPage } from './gradebook/GradebookViewPage'
+import { GradeScalePage } from './grade-scale/GradeScalePage'
 
 export function AdminRoutes() {
   return (
@@ -27,6 +29,8 @@ export function AdminRoutes() {
       <Route path="fee-invoices" element={<FeeInvoicesPage />} />
       <Route path="fee-invoices/:id" element={<FeeInvoicePage />} />
       <Route path="attendance" element={<AttendanceViewPage />} />
+      <Route path="gradebook" element={<GradebookViewPage />} />
+      <Route path="grade-scale" element={<GradeScalePage />} />
     </Routes>
   )
 }

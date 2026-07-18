@@ -100,6 +100,13 @@
 | `BulkUpsertAttendanceRequest` | `attendance.ts` | `sectionId`, `academicYearId`, `date`, `entries: AttendanceEntryRequest[]` |
 | `AttendanceEntryRequest` | `attendance.ts` | `studentId`, `status: AttendanceStatus`, `notes?` |
 | `AttendanceHistoryEntry` | `attendance.ts` | `id`, `sectionId`, `sectionName`, `date`, `status`, `notes` |
+| `gradebookApi` | `gradebook.ts` | Academic marks per subject/term. Wrappers: `getSubjectRoster(sectionId, subjectId, semesterId)`, `bulkUpsert(request)`, `getStudentGrades(studentId, academicYearId)`. Hits backend `/gradebook` (NOT `/grades` — that is grade-LEVELS). |
+| `gradeScaleApi` | `gradebook.ts` | Admin band CRUD: `getAll()`, `create(body)`, `update(id, body)`, `remove(id)`. Backend `/grade-scale`. |
+| `GRADEBOOK_KEYS` | `gradebook.ts` | Query key factory: `{ subjectRoster(sectionId, subjectId, semesterId), studentGrades(studentId, academicYearId), scale }`. |
+| `GradeRosterEntry` / `SubjectGradeRoster` | `gradebook.ts` | Roster row (`midtermScore`/`finalScore`/`courseworkScore`/`termScore`/`letterGrade` all nullable) and its wrapper (section/subject/semester names + entries). |
+| `GradeEntryRequest` / `BulkUpsertGradesRequest` | `gradebook.ts` | Per-student score inputs (nullable) and the bulk body (`sectionId`, `subjectId`, `semesterId`, `entries`). |
+| `StudentGrade` | `gradebook.ts` | Student-centric row across subjects/terms for parent portal / student detail. |
+| `GradeScaleBand` / `UpsertGradeScaleBandRequest` | `gradebook.ts` | `id`, `letter`, `minScore`, `maxScore` and its upsert body. |
 
 ## Hooks (`src/hooks/`)
 
@@ -125,7 +132,7 @@
 
 | Component | Purpose |
 |---|---|
-| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role`. Nav items: Dashboard (all roles), Academic Years, Grades & Sections, Students, Teachers, Subjects, Fee Templates, Fee Invoices, Attendance `/admin/attendance` (Admin-only), Attendance `/teacher/attendance` (Teacher-only). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
+| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role`. Nav items: Dashboard (all roles), Academic Years, Grades & Sections, Students, Teachers, Subjects, Fee Templates, Fee Invoices, Attendance `/admin/attendance` (Admin-only), Gradebook `/admin/gradebook` (Admin-only), Grade Scale `/admin/grade-scale` (Admin-only), Attendance `/teacher/attendance` (Teacher-only), Gradebook `/teacher/gradebook` (Teacher-only). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
 
 ## Pages (`src/pages/`)
 
@@ -133,7 +140,8 @@
 |---|---|---|
 | `LoginPage` | `auth/LoginPage.tsx` | Split-panel login UI matching the "Login Page - Final" design. Left: navy brand panel with marketing copy and feature items. Right: white panel with RHF+Zod form (email + password + remember-me checkbox). Shows `"Invalid email or password."` form-level error on 401; disables submit while in flight. On success: calls `setUser` then navigates to `/dashboard`. |
 | `DashboardPage` | `dashboard/DashboardPage.tsx` | Stub — "Welcome, {displayName}" heading. All future role-specific dashboards live here. |
-| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years`, `grades`, `students`, `students/:id`, `teachers`, `teachers/:id`, `subjects`, `fee-templates`, `fee-templates/:id`, `fee-invoices`, `fee-invoices/:id`, `attendance`. |
+| `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years`, `grades`, `students`, `students/:id`, `teachers`, `teachers/:id`, `subjects`, `fee-templates`, `fee-templates/:id`, `fee-invoices`, `fee-invoices/:id`, `attendance`, `gradebook`, `grade-scale`. |
+| `TeacherRoutes` | `teacher/index.tsx` | `<Routes>` wrapper for `/teacher/*`. Routes: `attendance`, `gradebook`. |
 | `AcademicYearsPage` | `admin/academic-years/AcademicYearsPage.tsx` | Admin page at `/admin/academic-years`. Fetches year list via TanStack Query; partitions into current / previous / archived sections; manages `createOpen`, `editingSemester`, `showArchived` state; owns all mutations (setCurrentYear, archive, setCurrentSemester); composes `AcademicYearCard`, `CreateYearModal`, `EditSemesterModal`. |
 | `GradesPage` | `admin/grades/GradesPage.tsx` | Admin page at `/admin/grades`. Fetches grade list via TanStack Query; manages `createOpen`, `editingGrade`, `expandedIds` (accordion) state; owns grade delete mutation; auto-expands accordion for newly created grades via `onCreated` callback; composes `GradeAccordionItem`, `CreateGradeModal`, `EditGradeModal`. |
 | `GradeAccordionItem` | `admin/grades/components/GradeAccordionItem.tsx` | shadcn Accordion card for one grade. Collapsed header shows grade name + section count Badge. Expanded body shows `SectionChip` row (each with `onRoster` callback), inline add-section form (input + save/cancel), and Edit Grade / Delete Grade buttons. Delete Grade is disabled (with Tooltip) when `grade.sections.length > 0`. Owns `addSectionMutation` and `rosterSection` state (drives `SectionRosterSheet`). |
@@ -176,6 +184,9 @@
 | `TeacherRoutes` | `teacher/index.tsx` | `<Routes>` wrapper for `/teacher/*`. Routes: `attendance`. |
 | `AttendancePage` | `teacher/attendance/AttendancePage.tsx` | Teacher page at `/teacher/attendance`. Grade → Section cascading `Select`, Academic Year `Select` (defaults to active year), date `Input` (defaults today). When all three set: fetches roster via `ATTENDANCE_KEYS.sectionRoster`. Roster table: Code, Name, Status `Select` (Present/Late/Absent/Excused with color badges), Notes `Input`. "Mark All Present" button sets every entry to Present. Submit → `attendanceApi.bulkUpsert` → Sonner success toast. `useBlocker` guard if entries are dirty vs. last-saved state. Server enforces teacher section assignment — 400 toast if not assigned. |
 | `AttendanceViewPage` | `admin/attendance/AttendanceViewPage.tsx` | Admin read-only page at `/admin/attendance`. Same Grade → Section cascading `Select`, Year `Select`, date `Input` controls. Fetches roster; shows read-only table with Status color badge and Notes column. "No attendance recorded for this date." message when entries exist but none are marked. |
+| `GradebookPage` | `teacher/gradebook/GradebookPage.tsx` | Teacher page at `/teacher/gradebook`. Year → Semester (defaults to current) + Grade → Section + Subject `Select`s. Loads roster via `GRADEBOOK_KEYS.subjectRoster`. Table: Code, Name, Midterm/Final/Coursework number `Input`s (0–100), read-only Term (provisional 30/40/30 client preview) + Letter (server value shown only when unchanged), Notes. Save → `gradebookApi.bulkUpsert` → toast + refetch (authoritative Term/Letter). `useBlocker` dirty guard. Server enforces subject-section ownership + archived-year block. |
+| `GradebookViewPage` | `admin/gradebook/GradebookViewPage.tsx` | Admin read-only page at `/admin/gradebook`. Same Year/Semester/Grade/Section/Subject `Select`s. Read-only table of Midterm/Final/Coursework/Term/Letter/Notes; "X of Y graded" summary line. |
+| `GradeScalePage` | `admin/grade-scale/GradeScalePage.tsx` | Admin page at `/admin/grade-scale`. Table of letter bands (Letter/Min/Max) with add/edit (inline `Dialog` form) and delete (confirm `Dialog`). Validates 0–100 and Min ≤ Max client-side. Copy notes edits apply to grades saved after the change. |
 | `ParentRoutes` | `parent/index.tsx` | Stub `<Outlet>` for future `/parent/*` pages. |
 
 ## Shared Components (`src/components/`)
