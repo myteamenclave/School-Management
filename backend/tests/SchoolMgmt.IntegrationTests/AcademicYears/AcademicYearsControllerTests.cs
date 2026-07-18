@@ -342,8 +342,11 @@ public class AcademicYearsControllerTests(PostgresContainerFixture fixture)
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    // Academic years are readable by any authenticated user — see commit
+    // "allow any authenticated user to read academic years and grades". Teachers
+    // need the year/semester list to drive attendance and gradebook pickers.
     [Fact]
-    public async Task TeacherRole_Returns403()
+    public async Task TeacherRole_CanReadList_Returns200()
     {
         await using var factory = fixture.CreateFactory();
         using var client = factory.CreateClient();
@@ -380,6 +383,6 @@ public class AcademicYearsControllerTests(PostgresContainerFixture fixture)
         var teacherCookies = CookieTestHelpers.BuildCookieHeader(loginResponse);
 
         var response = await client.SendAsync(Get("/api/academic-years", teacherCookies));
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }
