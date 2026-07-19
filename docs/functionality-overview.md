@@ -54,7 +54,7 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
   - [x] Frontend
 
 ## Parent Portal
-- Parent login linked to child/children
+- Parent login linked to child/children — [idea doc](ideas/14-parent-guardian-link.md)
   - [ ] Backend
   - [ ] Frontend
 - View child's grades
