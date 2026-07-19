@@ -49,8 +49,8 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
 - Financial audit trail (who changed/collected what, when)
   - [ ] Backend
   - [ ] Frontend
-- Overview dashboard (revenue vs. outstanding fees, enrollment trend, attendance trend, teacher overview)
-  - [ ] Backend
+- Overview dashboard (revenue vs. outstanding fees, enrollment trend, attendance trend, teacher overview) — [idea doc](ideas/13-overview-dashboard.md) · [spec](../specs/16-implement-overview-dashboard.md)
+  - [x] Backend
   - [ ] Frontend
 
 ## Parent Portal
