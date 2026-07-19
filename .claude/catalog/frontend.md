@@ -107,6 +107,13 @@
 | `GradeEntryRequest` / `BulkUpsertGradesRequest` | `gradebook.ts` | Per-student score inputs (nullable) and the bulk body (`sectionId`, `subjectId`, `semesterId`, `entries`). |
 | `StudentGrade` | `gradebook.ts` | Student-centric row across subjects/terms for parent portal / student detail. |
 | `GradeScaleBand` / `UpsertGradeScaleBandRequest` | `gradebook.ts` | `id`, `letter`, `minScore`, `maxScore` and its upsert body. |
+| `dashboardApi` | `dashboard.ts` | Admin overview aggregation: `overview(academicYearId?)` → `DashboardOverviewDto`. Single read-only GET; omits the param to default to the current year. |
+| `DASHBOARD_KEYS` | `dashboard.ts` | Query key factory: `{ overview(academicYearId) }`. |
+| `DashboardOverviewDto` | `dashboard.ts` | Root payload: `academicYearId/Name`, `finance`, `financeMonthly[]`, `attendanceMonthly[]`, `enrollment`, `teachers`. |
+| `FinanceSummaryDto` | `dashboard.ts` | `billed`, `collected`, `outstanding`, `overdue`, `collectionRate` (0..1), `issuedInvoiceCount`, `draftInvoiceCount`. |
+| `MonthlyMoneyPointDto` / `MonthlyAttendancePointDto` | `dashboard.ts` | Monthly buckets — money: `year`, `month`, `billed`, `collected`; attendance: `year`, `month`, `totalRecords`, `presentCount`, `presentRate` (0..1). |
+| `EnrollmentBreakdownDto` / `GradeCountDto` / `StatusCountDto` | `dashboard.ts` | `totalEnrolled` + `byGrade[]` + `byStatus[]`. |
+| `TeacherCoverageDto` | `dashboard.ts` | `teacherCount`, `assignmentCount`, `sectionsWithEnrollments`, `sectionsWithoutAnyTeacher`, `teachersWithoutAssignment`. |
 
 ## Hooks (`src/hooks/`)
 
@@ -139,7 +146,14 @@
 | Component | Location | Purpose |
 |---|---|---|
 | `LoginPage` | `auth/LoginPage.tsx` | Split-panel login UI matching the "Login Page - Final" design. Left: navy brand panel with marketing copy and feature items. Right: white panel with RHF+Zod form (email + password + remember-me checkbox). Shows `"Invalid email or password."` form-level error on 401; disables submit while in flight. On success: calls `setUser` then navigates to `/dashboard`. |
-| `DashboardPage` | `dashboard/DashboardPage.tsx` | Stub — "Welcome, {displayName}" heading. All future role-specific dashboards live here. |
+| `DashboardPage` | `dashboard/DashboardPage.tsx` | Role dispatcher at `/dashboard`. Admin → `<OverviewDashboard>`; Teacher/Parent → plain "Welcome, {displayName}" heading (their dashboards are future work). |
+| `OverviewDashboard` | `dashboard/components/OverviewDashboard.tsx` | Admin overview. Owns year-selector state (defaults to `isCurrent`), fetches `academicYearsApi.list` + `dashboardApi.overview`. Per-tile skeletons while loading, retryable error state, empty states. Composes `YearSelector`, `FinanceTiles`, `FinanceChart`, `AttendanceChart`, `EnrollmentBreakdown`, `TeacherCoverage`. Drill-through links to fee-invoices/attendance/students/teachers. |
+| `YearSelector` | `dashboard/components/YearSelector.tsx` | shadcn `Select` of academic years (marks `(current)`). Reuses the academic-years list — the dashboard DTO does NOT carry the year list. |
+| `FinanceTiles` | `dashboard/components/FinanceTiles.tsx` | Finance KPI cards (Collected/Outstanding/Overdue/Collection rate) + amber draft-invoice exception line linking to filtered invoices. |
+| `FinanceChart` / `AttendanceChart` | `dashboard/components/` | recharts monthly charts — grouped Billed-vs-Collected bars; present-rate line (0–100%). |
+| `EnrollmentBreakdown` / `TeacherCoverage` | `dashboard/components/` | recharts by-grade bars + status chips; teacher staffing stats with amber coverage-gap callouts. |
+| `DashboardCard` / `EmptyTile` | `dashboard/components/DashboardCard.tsx` | Card wrapper with optional drill-through header link; muted empty-state placeholder. |
+| dashboard chart helpers | `dashboard/components/format.ts` | `CHART_COLORS` (brand hexes for recharts), `formatMoney`, `formatPercent`, `monthLabel`. |
 | `AdminRoutes` | `admin/index.tsx` | `<Routes>` wrapper for `/admin/*`. Routes: `academic-years`, `grades`, `students`, `students/:id`, `teachers`, `teachers/:id`, `subjects`, `fee-templates`, `fee-templates/:id`, `fee-invoices`, `fee-invoices/:id`, `attendance`, `gradebook`, `grade-scale`. |
 | `TeacherRoutes` | `teacher/index.tsx` | `<Routes>` wrapper for `/teacher/*`. Routes: `attendance`, `gradebook`. |
 | `AcademicYearsPage` | `admin/academic-years/AcademicYearsPage.tsx` | Admin page at `/admin/academic-years`. Fetches year list via TanStack Query; partitions into current / previous / archived sections; manages `createOpen`, `editingSemester`, `showArchived` state; owns all mutations (setCurrentYear, archive, setCurrentSemester); composes `AcademicYearCard`, `CreateYearModal`, `EditSemesterModal`. |
