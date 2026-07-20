@@ -476,7 +476,10 @@ public class SubjectsControllerTests(PostgresContainerFixture fixture)
             new { email = teacherEmail, password = teacherPassword });
         var teacherCookies = CookieTestHelpers.BuildCookieHeader(loginResponse);
 
-        var response = await client.SendAsync(Get("/api/subjects", teacherCookies));
+        // GET /api/subjects (list) was intentionally relaxed to Admin+Teacher (commit 11d83d4) so
+        // teachers can read the subject catalog. Admin-only subject *management* endpoints — e.g.
+        // GET /api/subjects/{id} — must still forbid a teacher.
+        var response = await client.SendAsync(Get($"/api/subjects/{Guid.NewGuid()}", teacherCookies));
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 }

@@ -57,7 +57,7 @@ internal sealed class DashboardRepository(AppDbContext context) : IDashboardRepo
         var billedDict = billedByMonth.ToDictionary(x => (x.Year, x.Month), x => x.Amount);
         var collectedDict = collectedByMonth.ToDictionary(x => (x.Year, x.Month), x => x.Amount);
 
-        return MonthSequence(startDate, endDate)
+        return MonthSequence(startDate, endDate, billedDict.Keys.Concat(collectedDict.Keys))
             .Select(k => new MonthlyMoneyPointDto(
                 k.Year, k.Month,
                 billedDict.GetValueOrDefault(k),
@@ -82,7 +82,7 @@ internal sealed class DashboardRepository(AppDbContext context) : IDashboardRepo
 
         var dict = byMonth.ToDictionary(x => (x.Year, x.Month));
 
-        return MonthSequence(startDate, endDate)
+        return MonthSequence(startDate, endDate, dict.Keys)
             .Select(k =>
             {
                 dict.TryGetValue(k, out var v);
@@ -150,16 +150,25 @@ internal sealed class DashboardRepository(AppDbContext context) : IDashboardRepo
             teachersWithoutAssignment);
     }
 
-    // Inclusive month sequence spanning the academic year, so months with no data render as zero points.
-    private static IEnumerable<(int Year, int Month)> MonthSequence(DateOnly start, DateOnly end)
+    // Inclusive month sequence for the charts. Baseline is the academic year's own window
+    // (so empty months render as zero points), EXTENDED to also cover any month that actually
+    // has data — records dated outside the configured year window are still shown, never
+    // silently dropped (e.g. attendance marked before the year's StartDate).
+    private static IEnumerable<(int Year, int Month)> MonthSequence(
+        DateOnly start, DateOnly end, IEnumerable<(int Year, int Month)> dataMonths)
     {
-        var year = start.Year;
-        var month = start.Month;
-        while (year < end.Year || (year == end.Year && month <= end.Month))
+        static int Ordinal(int year, int month) => year * 12 + (month - 1);
+
+        var minOrdinal = Ordinal(start.Year, start.Month);
+        var maxOrdinal = Ordinal(end.Year, end.Month);
+        foreach (var (year, month) in dataMonths)
         {
-            yield return (year, month);
-            month++;
-            if (month > 12) { month = 1; year++; }
+            var ordinal = Ordinal(year, month);
+            if (ordinal < minOrdinal) minOrdinal = ordinal;
+            if (ordinal > maxOrdinal) maxOrdinal = ordinal;
         }
+
+        for (var ordinal = minOrdinal; ordinal <= maxOrdinal; ordinal++)
+            yield return (ordinal / 12, ordinal % 12 + 1);
     }
 }

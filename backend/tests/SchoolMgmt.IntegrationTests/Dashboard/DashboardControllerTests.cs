@@ -428,4 +428,42 @@ public class DashboardControllerTests(PostgresContainerFixture fixture)
         Assert.Equal(1, oct.GetProperty("presentCount").GetInt32());
         Assert.Equal(1.0, oct.GetProperty("presentRate").GetDouble());
     }
+
+    // Records dated OUTSIDE the year's configured window must still surface — never silently dropped
+    // (the real-world bug: attendance marked before the year's StartDate vanished from the chart).
+    [Fact]
+    public async Task GetOverview_Attendance_IncludesRecordsDatedOutsideYearWindow()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+        var admin = await LoginAsAdminAsync(client);
+        var tag = Guid.NewGuid().ToString("N")[..6];
+
+        // Year window is Sep 2025 .. Jun 2026; the record is dated Aug 2026 (one month AFTER the end).
+        var (yearId, _) = await SeedYearAsync(client, admin, "ATTOUT-" + tag, "2025-09-01", "2026-06-30");
+        var (_, sectionId) = await SeedSectionAsync(client, admin, "Grade-ATTOUT-" + tag);
+        var studentId = await SeedStudentAsync(client, admin);
+
+        await using (var db = CreateSeedContext())
+        {
+            var markedByUserId = (await db.Users.FirstAsync(u => u.Email == "admin@demoschool.test")).Id;
+            db.AttendanceRecords.Add(new AttendanceRecord
+            {
+                StudentId = Guid.Parse(studentId),
+                SectionId = Guid.Parse(sectionId),
+                AcademicYearId = Guid.Parse(yearId),
+                Date = new DateOnly(2026, 8, 15),
+                Status = AttendanceStatus.Present,
+                MarkedByUserId = markedByUserId,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var attendance = (await GetOverviewAsync(client, admin, yearId)).GetProperty("attendanceMonthly");
+
+        var aug = attendance.EnumerateArray().Single(p =>
+            p.GetProperty("year").GetInt32() == 2026 && p.GetProperty("month").GetInt32() == 8);
+        Assert.Equal(1, aug.GetProperty("totalRecords").GetInt32());
+        Assert.Equal(1, aug.GetProperty("presentCount").GetInt32());
+    }
 }
