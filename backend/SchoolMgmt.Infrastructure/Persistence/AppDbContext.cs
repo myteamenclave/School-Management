@@ -31,6 +31,7 @@ public class AppDbContext(
     public DbSet<FeeInstallment> FeeInstallments => Set<FeeInstallment>();
     public DbSet<DiscountRule> DiscountRules => Set<DiscountRule>();
     public DbSet<StudentSectionEnrollment> StudentSectionEnrollments => Set<StudentSectionEnrollment>();
+    public DbSet<StudentParent> StudentParents => Set<StudentParent>();
     public DbSet<TeacherSectionSubject> TeacherSectionSubjects => Set<TeacherSectionSubject>();
     public DbSet<StudentFeeAssignment> StudentFeeAssignments => Set<StudentFeeAssignment>();
     public DbSet<StudentDiscountAssignment> StudentDiscountAssignments => Set<StudentDiscountAssignment>();

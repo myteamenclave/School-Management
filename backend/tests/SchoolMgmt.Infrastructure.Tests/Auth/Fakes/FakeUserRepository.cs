@@ -12,6 +12,9 @@ public class FakeUserRepository : IUserRepository
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         Task.FromResult(_byId.Values.FirstOrDefault(u => u.Email == email));
 
+    public Task<User?> FindByEmailInTenantAsync(string email, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_byId.Values.FirstOrDefault(u => u.Email == email));
+
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_byId.GetValueOrDefault(id));
 
