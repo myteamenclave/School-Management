@@ -1,4 +1,4 @@
-<!-- Last verified: 2026-07-15. Update this file whenever a new public type/function is added or removed from the backend. Check here before adding new code — don't duplicate something that already exists. -->
+<!-- Last verified: 2026-07-20. Update this file whenever a new public type/function is added or removed from the backend. Check here before adding new code — don't duplicate something that already exists. -->
 
 # Backend Catalog
 
@@ -43,6 +43,7 @@
 | `GradeWeights` (static) | `Gradebook/GradeWeights.cs` | Within-subject term rollup weight constants: `Midterm = 0.30`, `Final = 0.40`, `Coursework = 0.30`. NOT cross-subject GPA weighting. |
 | `SubjectTermGrade` | `Entities/SubjectTermGrade.cs` | `BaseEntity` + `ITenantScoped`. Academic mark for one student in one subject for one semester (the "term"). Unique index `(SchoolId, StudentId, SubjectId, SemesterId)` — `SectionId` is provenance only, NOT part of identity. `SetScores(mid, final, course)` computes `TermScore` (weighted 30/40/30, rounded 2dp) only when all three present else null, and resets `LetterGrade`; `ApplyLetter(letter)` sets the letter (service resolves it from `GradeScaleBand`s). Nav: `Student`, `Subject`, `Section`, `AcademicYear`, `Semester`, `EnteredByUser`. All FKs `ON DELETE RESTRICT`. |
 | `GradeScaleBand` | `Entities/GradeScaleBand.cs` | `BaseEntity` + `ITenantScoped`. Admin-editable letter band: `Letter`, `MinScore`, `MaxScore` (both inclusive). Unique index `(SchoolId, Letter)`. Seeded A–F for the seed school via `HasData`. |
+| `StudentParent` | `Entities/StudentParent.cs` | `BaseEntity` + `ITenantScoped`. Junction linking a `Parent`-role `User` to a `Student` (many-to-many: one parent → many children, one student → many parents). Navigation: `Student`, `ParentUser`. Unique index `(StudentId, UserId)` (idempotent links). Both FKs `ON DELETE RESTRICT`. |
 
 ## Application (`SchoolMgmt.Application`)
 
@@ -52,7 +53,9 @@
 | `IDateTimeProvider` | `Interfaces/IDateTimeProvider.cs` | `UtcNow` — testable abstraction over `DateTimeOffset.UtcNow` |
 | `IRepository<TEntity>` | `Interfaces/IRepository.cs` | Generic repository base (`GetByIdAsync`, `AddAsync`, `Update`, `Remove`). Per-entity repositories extend this — `IUserRepository`, `IRefreshTokenRepository` exist; more land with future feature specs |
 | `IUnitOfWork` | `Interfaces/IUnitOfWork.cs` | Owns persistence/transactions (`SaveChangesAsync`, `BeginTransactionAsync`, `CommitAsync`, `RollbackAsync`, `Detach<T>`). Repositories never call these directly. `Detach<T>` detaches a tracked entity from the EF change tracker — used by `StudentService` retry loop to drop a failed `Added` entity before retrying with a new `StudentCode` |
-| `IUserRepository` | `Interfaces/IUserRepository.cs` | Extends `IRepository<User>`. `GetByEmailAsync` — bypasses the tenant filter (login is pre-authentication) |
+| `IUserRepository` | `Interfaces/IUserRepository.cs` | Extends `IRepository<User>`. `GetByEmailAsync` — bypasses the tenant filter (login is pre-authentication). `FindByEmailInTenantAsync` — tenant-scoped email lookup (respects the query filter); use on authenticated requests (e.g. parent-login creation) |
+| `IStudentParentRepository` | `ParentAccounts/IStudentParentRepository.cs` | Extends `IRepository<StudentParent>`. `GetLinkAsync(studentId, userId)`, `GetByStudentIdAsync(studentId)` (includes `ParentUser`, ordered by display name) |
+| `ParentAccountService` | `ParentAccounts/ParentAccountService.cs` | Admin-only parent-login management. `CreateParentLoginAsync` (create-or-reuse `Parent` user from student's `GuardianEmail`, hash Admin temp password, create link; idempotent; 409 on non-Parent email collision, 400 on blank email; reuse leaves existing password untouched), `GetParentsForStudentAsync`, `RemoveParentLinkAsync` (removes link only, never the `User`) |
 | `IRefreshTokenRepository` | `Interfaces/IRefreshTokenRepository.cs` | Extends `IRepository<RefreshToken>`. `GetByTokenHashAsync` (eager-loads `User`, bypasses tenant filter), `GetActiveBySessionIdAsync` (for theft-detection family revocation) |
 | `IPasswordHasher` | `Interfaces/IPasswordHasher.cs` | `HashPassword`/`VerifyPassword`. Implemented by `PasswordHasherAdapter` wrapping ASP.NET Core Identity's standalone `PasswordHasher<TUser>` (not full Identity) |
 | `IJwtTokenGenerator` | `Interfaces/IJwtTokenGenerator.cs` | `GenerateAccessToken(User)` (JWT), `GenerateRefreshToken()` (raw random string, not a JWT) |
@@ -227,6 +230,7 @@
 | `GradebookController` | `Controllers/GradebookController.cs` | Marks per subject/term. Route `api/gradebook` (NOT `api/grades` — that is grade-LEVELS). `[Authorize(Roles = "Admin,Teacher")]`. `GET /subject-roster?sectionId=&subjectId=&semesterId=` (Admin+Teacher). `PUT /bulk` (`[Authorize(Roles="Teacher")]`; body `BulkUpsertGradesRequest`; resolves teacher from `sub` claim). `GET /student?studentId=&academicYearId=` (Admin+Teacher). |
 | `GradeScaleController` | `Controllers/GradeScaleController.cs` | `[Authorize(Roles = "Admin")]`. `api/grade-scale` band CRUD: `GET`, `POST`, `PUT /{id}`, `DELETE /{id}`. |
 | `DashboardController` | `Controllers/DashboardController.cs` | `[Authorize(Roles = "Admin")]`. `GET /api/dashboard/overview?academicYearId=` — single read-only aggregation for the admin overview dashboard (defaults to current year; 404 if unknown/none). No new migration — pure read model. |
+| `StudentParentsController` | `Controllers/StudentParentsController.cs` | `[Authorize(Roles = "Admin")]`. Route `api/students/{studentId:guid}`. `POST /parent-login` (200 `ParentLoginResultDto`; 400 blank guardian email, 409 non-Parent email), `GET /parents` (200 `List<ParentAccountDto>`), `DELETE /parents/{parentUserId:guid}` (204; removes link only, not the `User`). |
 
 ## Migrations
 

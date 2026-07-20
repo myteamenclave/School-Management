@@ -8,4 +8,7 @@ internal sealed class UserRepository(AppDbContext context) : Repository<User>(co
 {
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         DbSet.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+
+    public Task<User?> FindByEmailInTenantAsync(string email, CancellationToken cancellationToken = default) =>
+        DbSet.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 }

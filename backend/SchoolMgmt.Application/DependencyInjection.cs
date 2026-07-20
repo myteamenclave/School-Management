@@ -14,6 +14,7 @@ using SchoolMgmt.Application.TeacherAssignments;
 using SchoolMgmt.Application.Attendance;
 using SchoolMgmt.Application.Gradebook;
 using SchoolMgmt.Application.Dashboard;
+using SchoolMgmt.Application.ParentAccounts;
 
 namespace SchoolMgmt.Application;
 
@@ -35,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<GradebookService>();
         services.AddScoped<GradeScaleService>();
         services.AddScoped<DashboardService>();
+        services.AddScoped<ParentAccountService>();
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         return services;
