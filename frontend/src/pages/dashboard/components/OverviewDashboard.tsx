@@ -119,14 +119,14 @@ export function OverviewDashboard({ displayName }: { displayName?: string }) {
           <div className="grid gap-4 lg:grid-cols-2">
             <DashboardCard
               title="Attendance"
-              description="Monthly present rate (present + late)."
+              description={`${overview.academicYearName} · monthly present rate (present + late).`}
               to="/admin/attendance"
               linkLabel="Attendance"
             >
               {hasAny(overview.attendanceMonthly, ['totalRecords']) ? (
                 <AttendanceChart points={overview.attendanceMonthly} />
               ) : (
-                <EmptyTile message="No attendance recorded for this year yet." />
+                <EmptyTile message={`No attendance recorded for ${overview.academicYearName} yet.`} />
               )}
             </DashboardCard>
 

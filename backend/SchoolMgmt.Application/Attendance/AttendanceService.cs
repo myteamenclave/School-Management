@@ -1,3 +1,4 @@
+using SchoolMgmt.Application.AcademicYears;
 using SchoolMgmt.Application.Attendance.Dtos;
 using SchoolMgmt.Application.Enrollments;
 using SchoolMgmt.Application.Grades;
@@ -16,6 +17,7 @@ public class AttendanceService(
     ITeacherSectionSubjectRepository assignmentRepo,
     ITeacherRepository teacherRepo,
     IGradeRepository gradeRepo,
+    IAcademicYearRepository yearRepo,
     IUnitOfWork unitOfWork)
 {
     public async Task<SectionAttendanceRosterDto> GetSectionRosterAsync(
@@ -48,6 +50,15 @@ public class AttendanceService(
     {
         _ = await gradeRepo.GetSectionByIdAsync(request.SectionId, ct)
             ?? throw new NotFoundException("Section not found.");
+
+        var year = await yearRepo.GetByIdAsync(request.AcademicYearId, ct)
+            ?? throw new NotFoundException("Academic year not found.");
+
+        // Attendance can only be marked on a date within the academic year's calendar window.
+        if (request.Date < year.StartDate || request.Date > year.EndDate)
+            throw new DomainException(
+                $"Attendance date {request.Date:yyyy-MM-dd} is outside the {year.Name} academic year " +
+                $"({year.StartDate:yyyy-MM-dd} to {year.EndDate:yyyy-MM-dd}).");
 
         var teacher = await teacherRepo.GetByUserIdAsync(markedByUserId, ct)
             ?? throw new NotFoundException("Teacher profile not found.");
