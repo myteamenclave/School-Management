@@ -29,8 +29,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '../../../components/ui/dialog'
-import { gradebookApi, GRADEBOOK_KEYS } from '../../../api/gradebook'
-import type { GradeRosterEntry } from '../../../api/gradebook'
+import { gradebookApi, gradeScaleApi, GRADEBOOK_KEYS } from '../../../api/gradebook'
+import type { GradeRosterEntry, GradeScaleBand } from '../../../api/gradebook'
 import { academicYearsApi, ACADEMIC_YEAR_KEYS } from '../../../api/academicYears'
 import { gradesApi, GRADE_KEYS } from '../../../api/grades'
 import { subjectsApi, SUBJECT_KEYS } from '../../../api/subjects'
@@ -55,6 +55,12 @@ function provisionalTerm(mid: number | null, fin: number | null, course: number 
   return Math.round((mid * WEIGHTS.midterm + fin * WEIGHTS.final + course * WEIGHTS.coursework) * 100) / 100
 }
 
+// Mirrors the server LetterResolver: first band whose [min, max] contains the score.
+function resolveLetter(bands: GradeScaleBand[], score: number | null): string | null {
+  if (score === null) return null
+  return bands.find((b) => score >= b.minScore && score <= b.maxScore)?.letter ?? null
+}
+
 interface EntryState {
   studentId: string
   studentName: string
@@ -63,8 +69,6 @@ interface EntryState {
   final: string
   coursework: string
   notes: string
-  savedTermScore: number | null
-  savedLetterGrade: string | null
 }
 
 export function GradebookPage() {
@@ -92,6 +96,13 @@ export function GradebookPage() {
     queryFn: () => subjectsApi.list({ isActive: true, search: '', page: 1, pageSize: 200 }),
   })
   const subjects = subjectsPage?.items ?? []
+
+  // Grade scale bands — used to map the provisional term score to a letter live,
+  // matching the server's mapping (readable by teachers).
+  const { data: bands = [] } = useQuery({
+    queryKey: GRADEBOOK_KEYS.scale,
+    queryFn: gradeScaleApi.getAll,
+  })
 
   // Default to active year, and its current semester.
   useEffect(() => {
@@ -141,8 +152,6 @@ export function GradebookPage() {
       final: e.finalScore?.toString() ?? '',
       coursework: e.courseworkScore?.toString() ?? '',
       notes: e.notes ?? '',
-      savedTermScore: e.termScore,
-      savedLetterGrade: e.letterGrade,
     }))
     setEntries(loaded)
     setSavedEntries(loaded)
@@ -346,10 +355,9 @@ export function GradebookPage() {
                         parseScore(entry.final),
                         parseScore(entry.coursework)
                       )
-                      // Letter is server-derived; show the saved value only when the
-                      // current provisional term matches the saved term (i.e. unchanged).
-                      const letter =
-                        term !== null && term === entry.savedTermScore ? entry.savedLetterGrade : null
+                      // Resolve the letter live from the same bands the server uses,
+                      // so it updates as scores are typed (not just after save).
+                      const letter = resolveLetter(bands, term)
                       return (
                         <TableRow key={entry.studentId}>
                           <TableCell className="font-mono text-xs text-muted-foreground">

@@ -165,8 +165,10 @@ public class GradeScaleControllerTests(PostgresContainerFixture fixture)
         Assert.DoesNotContain(bands.EnumerateArray(), b => b.GetProperty("letter").GetString() == letter);
     }
 
+    // Teachers may READ the grade scale (the gradebook maps term scores to letters
+    // live). Writes remain Admin-only — see Create/Update/Delete_AsTeacher below.
     [Fact]
-    public async Task GetAll_AsTeacher_Returns403()
+    public async Task GetAll_AsTeacher_Returns200()
     {
         await using var factory = fixture.CreateFactory();
         using var client = factory.CreateClient();
@@ -175,6 +177,21 @@ public class GradeScaleControllerTests(PostgresContainerFixture fixture)
         var teacher = await LoginAsTeacherAsync(client, admin, tag);
 
         var res = await client.SendAsync(Get("/api/grade-scale", teacher));
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_AsTeacher_Returns403()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+        var admin = await LoginAsAdminAsync(client);
+        var tag = Guid.NewGuid().ToString("N")[..6];
+        var teacher = await LoginAsTeacherAsync(client, admin, tag);
+
+        var res = await client.SendAsync(Post("/api/grade-scale", teacher,
+            new { letter = UniqueLetter(tag), minScore = 10m, maxScore = 20m }));
 
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
     }

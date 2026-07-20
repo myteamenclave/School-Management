@@ -584,7 +584,7 @@ public class GradeScaleController(GradeScaleService service) : ControllerBase
 
 Import needed in `GradesController`: `using System.Security.Claims;`
 
-> **GET-scale for Teacher:** the teacher UI shows the letter that comes back on the roster (server-computed), so teachers don't need the raw band table. `GET /api/grade-scale` stays Admin-only. If the teacher UI later needs to display the scale, relax to `Admin,Teacher`.
+> **GET-scale for Teacher:** `GET /api/grade-scale` is `Admin,Teacher` (writes stay Admin-only). The teacher gradebook fetches the bands and maps the provisional term score to a letter **live** as scores are typed — mirroring the server's `LetterResolver` — so the letter updates before save, not only after reload. (Originally scoped Admin-only; relaxed once the live-letter UX was needed.)
 
 ### A14. DI Registration
 
