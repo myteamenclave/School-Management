@@ -7,10 +7,11 @@ namespace SchoolMgmt.WebApi.Controllers;
 
 [ApiController]
 [Route("api/subjects")]
-[Authorize(Roles = "Admin")]
+[Authorize]
 public class SubjectsController(SubjectService service) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(CreateSubjectRequest request, CancellationToken ct)
     {
         var subject = await service.CreateSubjectAsync(request, ct);
@@ -18,6 +19,7 @@ public class SubjectsController(SubjectService service) : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin, Teacher")]
     public async Task<IActionResult> GetAll(
         [FromQuery] bool? isActive,
         [FromQuery] string? search = null,
@@ -31,6 +33,7 @@ public class SubjectsController(SubjectService service) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var subject = await service.GetSubjectByIdAsync(id, ct);
@@ -38,6 +41,7 @@ public class SubjectsController(SubjectService service) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(Guid id, UpdateSubjectRequest request, CancellationToken ct)
     {
         var subject = await service.UpdateSubjectAsync(id, request, ct);
