@@ -149,10 +149,10 @@ interface CreateParentLoginModalProps {
 **State 1 — form (before success):**
 - Title: "Create Parent Login".
 - Read-only display of the guardian email (shown as a disabled `Input` or a labelled static row) — makes clear the login *is* the guardian email; not editable here.
-- One editable field: **Temporary Password** (`Input type="text"` so the Admin can see what they're typing to relay it — not `type="password"`). Helper text: "The parent uses this to log in. Share it with them directly — it won't be emailed."
+- **Temporary Password** — **auto-generated**, not typed. A strong random password is generated when the modal opens (via `generatePassword()`, using `crypto.getRandomValues` over an unambiguous alphabet — no `0/O/1/I/l` — length 14, comfortably above the backend's 8-char minimum). Shown read-only in an `Input` with a **Copy** button and a **Regenerate** button (regenerate draws a fresh password). Helper text: "The parent uses this to log in. Share it with them directly".
 - Footer: "Cancel" + "Create Login" (submitting → "Creating…").
-- **Form:** RHF + Zod — `z.object({ temporaryPassword: z.string().min(8, 'At least 8 characters').max(128) })` (matches the backend `CreateParentLoginRequestValidator`: NotEmpty, 8–128).
-- Submit → `parentAccountsApi.createLogin(studentId, { temporaryPassword })`.
+- **No RHF/Zod** — there is no user-entered value to validate; the generated password is held in component state. (Backend validation still applies as a safety net.)
+- Submit → `parentAccountsApi.createLogin(studentId, { temporaryPassword })` with the generated password.
 - On error:
   - 409 → the returned `error` message (email owned by a non-parent account) via `toast.error(extractError(err))`; dialog stays open.
   - other → generic `toast.error(extractError(err))`.
@@ -160,15 +160,15 @@ interface CreateParentLoginModalProps {
 **State 2 — credentials panel (after success):**
 Switch the dialog body (keep it open) to a confirmation panel driven by the `ParentLoginResultDto`:
 
-- **If `result.accountCreated === true`** (new account — the typed password applies):
+- **If `result.accountCreated === true`** (new account — the generated password applies):
   - Heading "✓ Parent login ready" (or a `CheckCircle` icon).
   - `Email: {result.email}` with a **copy** button.
-  - `Password: {the temporaryPassword the Admin just submitted}` with a **copy** button. (The password is **not** in the response — read it from the submitted form value held in component state.)
+  - `Password: {the generated password just submitted}` with a **copy** button. (The password is **not** in the response — read it from the generated value held in component state.)
   - Note: "Share these with the parent — they won't be emailed."
 - **If `result.accountCreated === false`** (reused existing parent account — password unchanged/unknown):
   - Heading "✓ Linked to existing parent account".
   - `Email: {result.email}` with a copy button.
-  - Note: "This parent already had an account, so the password you entered was **not** applied — their existing password is unchanged."
+  - Note: "This parent already had an account, so the generated password was **not** applied — their existing password is unchanged."
   - If additionally `result.linkCreated === false`: add a line "This parent was already linked to this student." (idempotent no-op — nothing changed).
 - Footer: single "Done" button → calls `onCreated()` then `onClose()`.
 
@@ -230,8 +230,8 @@ The frontend has no automated test setup in this repo (prior frontend specs — 
 
 1. Open a student that **has** a guardian email → Parent Accounts tab → "Create parent login" is enabled; guardian email is shown.
 2. Open a student with **no** guardian email → the button is disabled with the helper hint; the guardian-email line reads "No guardian email set."
-3. Create a login with a valid password (≥8 chars) → success panel shows email + password with working copy buttons; closing it, the parent appears in the table.
-4. Password < 8 chars → inline Zod validation error; no request sent.
+3. Open "Create parent login" → a temporary password is already generated; Copy and Regenerate work. Click "Create Login" → success panel shows email + password with working copy buttons; closing it, the parent appears in the table.
+4. Regenerate produces a different password each click; reopening the modal starts with a fresh password (and back at the form, not the success panel).
 5. Create a login for a **second** student sharing the same guardian email → success panel shows the **reused-account** variant (no password shown, "existing password unchanged" note); the parent appears under both students.
 6. Click "Create parent login" again for a student already linked to that parent → success panel shows both the reused-account note and "already linked to this student."
 7. Guardian email that belongs to a **Teacher/Admin** account → 409 → error toast with the backend message; dialog stays open.
@@ -242,8 +242,8 @@ The frontend has no automated test setup in this repo (prior frontend specs — 
 
 ## Boundaries
 
-- **Always:** drive the login email from `student.guardianEmail` (read-only in the UI — the student record is the single source of truth); read the temp password for the success panel from the submitted form value (it is never returned by the API); invalidate `PARENT_ACCOUNT_KEYS.forStudent(studentId)` after create/remove; reset the modal to its form state on reopen.
-- **Ask first:** adding an "edit parent" / "reset password" affordance (backend has no endpoint for it — out of scope); auto-generating the temporary password; surfacing parent accounts anywhere other than the Student Detail page; adding a parent-facing route or nav item.
+- **Always:** drive the login email from `student.guardianEmail` (read-only in the UI — the student record is the single source of truth); auto-generate the temporary password client-side with `crypto.getRandomValues` (never `Math.random`); read the temp password for the success panel from the generated value (it is never returned by the API); regenerate a fresh password each time the modal opens; invalidate `PARENT_ACCOUNT_KEYS.forStudent(studentId)` after create/remove.
+- **Ask first:** adding an "edit parent" / "reset password" affordance (backend has no endpoint for it — out of scope); surfacing parent accounts anywhere other than the Student Detail page; adding a parent-facing route or nav item.
 - **Never:** send the temporary password anywhere except the create request body; put it in a query string, query key, or `localStorage`; call `DELETE .../parents/{id}` without a confirm; imply that removing a link deletes the parent user (copy must say the account is not deleted); add a GET that mutates state.
 
 ---
@@ -252,7 +252,7 @@ The frontend has no automated test setup in this repo (prior frontend specs — 
 
 1. A "Parent Accounts" tab appears on `/admin/students/:id` and lists linked parents (name, email, added date).
 2. "Create parent login" is disabled (with a hint) when the student has no guardian email, and enabled otherwise.
-3. Submitting a valid temporary password creates the login and shows a credentials panel with copy-to-clipboard for email + password; the new parent then appears in the table.
+3. Opening the modal shows an auto-generated temporary password (copyable, regeneratable); "Create Login" creates the account and shows a credentials panel with copy-to-clipboard for email + password; the new parent then appears in the table.
 4. The reused-account case renders the distinct panel variant (no password, "unchanged" note), and the idempotent repeat shows the "already linked" note.
 5. A 409 (email owned by a non-parent) surfaces the backend error message and keeps the dialog open.
 6. Removing a link prompts for confirmation, removes the row, and leaves the parent linked to any other children.

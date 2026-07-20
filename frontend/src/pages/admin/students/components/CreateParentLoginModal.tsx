@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
-import { CheckCircle2, Copy } from 'lucide-react'
+import { CheckCircle2, Copy, RefreshCw } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '../../../../components/ui/dialog'
@@ -22,10 +19,15 @@ function extractError(err: unknown): string {
   return 'An unexpected error occurred.'
 }
 
-const schema = z.object({
-  temporaryPassword: z.string().min(8, 'At least 8 characters').max(128, 'At most 128 characters'),
-})
-type FormValues = z.infer<typeof schema>
+// Generates a strong, unambiguous temporary password (no 0/O/1/I/l).
+function generatePassword(length = 14): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+  const bytes = new Uint32Array(length)
+  crypto.getRandomValues(bytes)
+  let out = ''
+  for (let i = 0; i < length; i++) out += alphabet[bytes[i] % alphabet.length]
+  return out
+}
 
 interface CreateParentLoginModalProps {
   open: boolean
@@ -57,34 +59,27 @@ export function CreateParentLoginModal({
   open, studentId, guardianEmail, onClose, onCreated,
 }: CreateParentLoginModalProps) {
   const [result, setResult] = useState<ParentLoginResultDto | null>(null)
-  const [submittedPassword, setSubmittedPassword] = useState('')
-
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { temporaryPassword: '' },
-  })
+  const [password, setPassword] = useState('')
 
   useEffect(() => {
     if (open) {
-      reset({ temporaryPassword: '' })
       setResult(null)
-      setSubmittedPassword('')
+      setPassword(generatePassword())
     }
-  }, [open, reset])
+  }, [open])
 
   const mutation = useMutation({
-    mutationFn: (values: FormValues) =>
-      parentAccountsApi.createLogin(studentId, { temporaryPassword: values.temporaryPassword }),
-    onSuccess: (res, values) => {
-      setSubmittedPassword(values.temporaryPassword)
+    mutationFn: () => parentAccountsApi.createLogin(studentId, { temporaryPassword: password }),
+    onSuccess: (res) => {
       setResult(res)
       onCreated()
     },
     onError: (err) => toast.error(extractError(err)),
   })
 
-  const handleDone = () => {
-    onClose()
+  const copyPassword = async () => {
+    await navigator.clipboard.writeText(password)
+    toast.success('Copied')
   }
 
   return (
@@ -96,11 +91,7 @@ export function CreateParentLoginModal({
               <DialogTitle>Create Parent Login</DialogTitle>
             </DialogHeader>
 
-            <form
-              id="create-parent-login-form"
-              onSubmit={handleSubmit((v) => mutation.mutate(v))}
-              className="flex flex-col gap-4 mt-2"
-            >
+            <div className="flex flex-col gap-4 mt-2">
               <div className="flex flex-col gap-1.5">
                 <Label>Guardian Email</Label>
                 <Input value={guardianEmail} readOnly disabled className="font-mono text-sm" />
@@ -110,21 +101,41 @@ export function CreateParentLoginModal({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="cpl-password">Temporary Password</Label>
-                <Input id="cpl-password" type="text" autoComplete="off" {...register('temporaryPassword')} />
-                {errors.temporaryPassword ? (
-                  <p className="text-xs text-destructive">{errors.temporaryPassword.message}</p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    The parent uses this to log in. Share it with them directly — it won't be emailed.
-                  </p>
-                )}
+                <Label>Temporary Password</Label>
+                <div className="flex items-center gap-2">
+                  <Input value={password} readOnly className="font-mono text-sm" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-11 w-11 p-0 shrink-0"
+                    title="Copy"
+                    onClick={copyPassword}
+                    disabled={mutation.isPending}
+                  >
+                    <Copy size={14} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-11 w-11 p-0 shrink-0"
+                    title="Regenerate"
+                    onClick={() => setPassword(generatePassword())}
+                    disabled={mutation.isPending}
+                  >
+                    <RefreshCw size={14} />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  The parent uses this to log in. Share it with them directly
+                </p>
               </div>
-            </form>
+            </div>
 
             <DialogFooter>
               <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>Cancel</Button>
-              <Button type="submit" form="create-parent-login-form" disabled={mutation.isPending}>
+              <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !password}>
                 {mutation.isPending ? 'Creating…' : 'Create Login'}
               </Button>
             </DialogFooter>
@@ -143,7 +154,7 @@ export function CreateParentLoginModal({
 
               {result.accountCreated ? (
                 <>
-                  <CopyRow label="Password" value={submittedPassword} />
+                  <CopyRow label="Password" value={password} />
                   <p className="text-xs text-muted-foreground">
                     Share these with the parent — they won't be emailed.
                   </p>
@@ -151,7 +162,7 @@ export function CreateParentLoginModal({
               ) : (
                 <>
                   <p className="text-xs text-muted-foreground">
-                    This parent already had an account, so the password you entered was <strong>not</strong> applied —
+                    This parent already had an account, so the generated password was <strong>not</strong> applied —
                     their existing password is unchanged.
                   </p>
                   {!result.linkCreated && (
@@ -164,7 +175,7 @@ export function CreateParentLoginModal({
             </div>
 
             <DialogFooter>
-              <Button onClick={handleDone}>Done</Button>
+              <Button onClick={onClose}>Done</Button>
             </DialogFooter>
           </>
         )}
