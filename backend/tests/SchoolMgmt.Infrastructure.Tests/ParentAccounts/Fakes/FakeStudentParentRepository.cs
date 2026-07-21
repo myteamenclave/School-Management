@@ -15,6 +15,9 @@ public class FakeStudentParentRepository : IStudentParentRepository
     public Task<List<StudentParent>> GetByStudentIdAsync(Guid studentId, CancellationToken ct = default) =>
         Task.FromResult(Links.Where(l => l.StudentId == studentId).ToList());
 
+    public Task<List<StudentParent>> GetByUserIdAsync(Guid userId, CancellationToken ct = default) =>
+        Task.FromResult(Links.Where(l => l.UserId == userId).ToList());
+
     public Task<StudentParent?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(Links.FirstOrDefault(l => l.Id == id));
 

@@ -16,4 +16,12 @@ internal sealed class StudentParentRepository(AppDbContext context)
             .Where(x => x.StudentId == studentId)
             .OrderBy(x => x.ParentUser.DisplayName)
             .ToListAsync(ct);
+
+    public Task<List<StudentParent>> GetByUserIdAsync(Guid userId, CancellationToken ct = default) =>
+        DbSet
+            .Include(x => x.Student)
+            .Where(x => x.UserId == userId)
+            .OrderBy(x => x.Student.LastName)
+            .ThenBy(x => x.Student.FirstName)
+            .ToListAsync(ct);
 }
