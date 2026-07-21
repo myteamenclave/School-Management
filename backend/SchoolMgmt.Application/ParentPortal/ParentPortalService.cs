@@ -1,6 +1,8 @@
 using SchoolMgmt.Application.AcademicYears;
 using SchoolMgmt.Application.Attendance;
 using SchoolMgmt.Application.Enrollments;
+using SchoolMgmt.Application.FeeInvoices;
+using SchoolMgmt.Application.FeeInvoices.Dtos;
 using SchoolMgmt.Application.Gradebook;
 using SchoolMgmt.Application.Gradebook.Dtos;
 using SchoolMgmt.Application.ParentAccounts;
@@ -16,7 +18,8 @@ public class ParentPortalService(
     IStudentSectionEnrollmentRepository enrollments,
     IAcademicYearRepository years,
     GradebookService gradebook,
-    AttendanceService attendance)
+    AttendanceService attendance,
+    FeeInvoiceService fees)
 {
     // The caller's linked children, labelled with their current-year grade/section.
     public async Task<List<ParentChildDto>> GetMyChildrenAsync(Guid parentUserId, CancellationToken ct = default)
@@ -78,6 +81,19 @@ public class ParentPortalService(
         var summary = await attendance.GetStudentSummaryAsync(childId, yearId, ct);
         var entries = await attendance.GetStudentHistoryAsync(childId, yearId, ct);
         return new ParentAttendanceDto(summary, entries);
+    }
+
+    // Fee balance + Issued invoice for one linked child. academicYearId null => current year.
+    public async Task<StudentFeeOverviewDto> GetChildFeesAsync(
+        Guid parentUserId, Guid childId, Guid? academicYearId, CancellationToken ct = default)
+    {
+        await ResolveLinkedChildOrThrow(parentUserId, childId, ct);
+
+        var yearId = academicYearId
+            ?? (await years.GetCurrentAsync(ct))?.Id
+            ?? throw new NotFoundException("No current academic year is set.");
+
+        return await fees.GetStudentFeeOverviewAsync(childId, yearId, ct);
     }
 
     // Minimal year list for the selector.

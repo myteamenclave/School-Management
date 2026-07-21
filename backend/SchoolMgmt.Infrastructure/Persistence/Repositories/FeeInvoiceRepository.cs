@@ -43,6 +43,19 @@ internal sealed class FeeInvoiceRepository(AppDbContext context)
                 i.AcademicYearId == academicYearId &&
                 i.Status != InvoiceStatus.Cancelled, ct);
 
+    public Task<FeeInvoice?> GetIssuedForStudentAndYearWithDetailsAsync(
+        Guid studentId, Guid academicYearId, CancellationToken ct = default) =>
+        DbSet
+            .Include(i => i.Student)
+            .Include(i => i.FeeTemplate)
+            .Include(i => i.AcademicYear)
+            .Include(i => i.LineItems)
+            .Include(i => i.Installments)
+            .FirstOrDefaultAsync(i =>
+                i.StudentId == studentId &&
+                i.AcademicYearId == academicYearId &&
+                i.Status == InvoiceStatus.Issued, ct);
+
     public async Task<(List<FeeInvoice> Items, int TotalCount)> GetPagedAsync(
         InvoiceStatus? status, Guid? gradeId, Guid? academicYearId,
         Guid? studentId, int page, int pageSize, CancellationToken ct = default)

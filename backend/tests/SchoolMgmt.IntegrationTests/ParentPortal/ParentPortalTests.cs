@@ -307,6 +307,164 @@ public class ParentPortalTests(PostgresContainerFixture fixture)
         Assert.Equal(0, body.GetProperty("entries").GetArrayLength());
     }
 
+    // ─── Fees ─────────────────────────────────────────────────────────────────
+
+    // Full scaffold for an Issued invoice tied to one child: grade+section, current year,
+    // student, enrolment, fee template (1000 total, 60% overdue + 40% future installments),
+    // broadcast-assign, generate, issue. Returns (childId, yearId, parentCookies).
+    private static async Task<(string childId, string yearId, string parentCookies)>
+        SeedChildWithIssuedInvoiceAsync(HttpClient client, string admin, string tag, bool issue = true)
+    {
+        var gradeId = (await (await client.SendAsync(Post("/api/grades", admin,
+            new { name = "Grade-" + tag, displayOrder = 70 })))
+            .Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("id").GetString()!;
+        var sectionId = (await (await client.SendAsync(Post($"/api/grades/{gradeId}/sections", admin, new { name = "A" })))
+            .Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("id").GetString()!;
+        var yearId = await SeedCurrentYearAsync(client, admin, "FEE-" + tag);
+
+        var email = $"parent-{tag}@demoschool.test";
+        var child = await SeedStudentAsync(client, admin, "Fee", "Kid-" + tag, email);
+        await client.SendAsync(Post($"/api/sections/{sectionId}/enrollments", admin,
+            new { studentId = child, academicYearId = yearId }));
+
+        // Fee template: one 1000 line item, two installments (60% + 40%).
+        var templateId = (await (await client.SendAsync(Post("/api/fee-templates", admin,
+            new { name = "Standard-" + tag, academicYearId = yearId, gradeId })))
+            .Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("id").GetString()!;
+        await client.SendAsync(Put($"/api/fee-templates/{templateId}/line-items", admin, new
+        {
+            items = new[] { new { name = "Tuition", amount = 1000m, displayOrder = 1 } }
+        }));
+        var instBody = await (await client.SendAsync(Put($"/api/fee-templates/{templateId}/installments", admin, new
+        {
+            items = new[]
+            {
+                new { name = "1st", percentage = 60m, displayOrder = 1 },
+                new { name = "2nd", percentage = 40m, displayOrder = 2 },
+            }
+        })).ConfigureAwait(false)).Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        var installments = instBody.GetProperty("installments").EnumerateArray().ToList();
+        var firstInstId = installments[0].GetProperty("id").GetString()!;
+        var secondInstId = installments[1].GetProperty("id").GetString()!;
+
+        // Assign the template to the grade, then generate. First installment due in the past
+        // (overdue), second in the far future.
+        await client.SendAsync(Post("/api/fee-assignments/broadcast", admin, new { templateId }));
+        await client.SendAsync(Post("/api/fee-invoices/generate", admin, new
+        {
+            gradeId,
+            academicYearId = yearId,
+            installmentDueDates = new[]
+            {
+                new { templateInstallmentId = firstInstId, dueDate = "2020-01-01" },
+                new { templateInstallmentId = secondInstId, dueDate = "2099-01-01" },
+            }
+        }));
+
+        if (issue)
+        {
+            var draft = await (await client.SendAsync(Get(
+                $"/api/fee-invoices?studentId={child}&academicYearId={yearId}", admin)))
+                .Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+            var invoiceId = draft.GetProperty("items")[0].GetProperty("id").GetString()!;
+            var issued = await client.SendAsync(Post($"/api/fee-invoices/{invoiceId}/issue", admin, new { }));
+            Assert.Equal(HttpStatusCode.OK, issued.StatusCode);
+        }
+
+        var (parent, _) = await SeedParentForStudentAsync(client, admin, child, email, "Passw0rd!");
+        return (child, yearId, parent);
+    }
+
+    [Fact]
+    public async Task GetChildFees_LinkedChildWithIssuedInvoice_ReturnsBalanceAndInvoice()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+        var admin = await LoginAsAdminAsync(client);
+
+        var (child, _, parent) = await SeedChildWithIssuedInvoiceAsync(client, admin, Uniq());
+
+        var res = await client.SendAsync(Get($"/api/parent/children/{child}/fees", parent));
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        var summary = body.GetProperty("summary");
+        Assert.True(summary.GetProperty("hasInvoice").GetBoolean());
+        Assert.Equal(1000m, summary.GetProperty("totalBilled").GetDecimal());
+        Assert.Equal(0m, summary.GetProperty("totalPaid").GetDecimal());
+        Assert.Equal(1000m, summary.GetProperty("outstanding").GetDecimal());
+        // First installment (600, due 2020) is overdue; second (400, due 2099) is not.
+        Assert.Equal(1, summary.GetProperty("overdueCount").GetInt32());
+        Assert.Equal(600m, summary.GetProperty("overdueAmount").GetDecimal());
+        Assert.Equal(1, summary.GetProperty("overdueInstallmentIds").GetArrayLength());
+        // Next due = earliest unpaid = the overdue one.
+        Assert.Equal("2020-01-01", summary.GetProperty("nextDueDate").GetString());
+
+        var invoice = body.GetProperty("invoice");
+        Assert.Equal(JsonValueKind.Object, invoice.ValueKind);
+        Assert.Equal("Issued", invoice.GetProperty("status").GetString());
+        Assert.Equal(1, invoice.GetProperty("lineItems").GetArrayLength());
+        Assert.Equal(2, invoice.GetProperty("installments").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task GetChildFees_DraftOnly_ReturnsNoInvoice()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+        var admin = await LoginAsAdminAsync(client);
+
+        // Generate but do NOT issue — the parent must not see a Draft.
+        var (child, _, parent) = await SeedChildWithIssuedInvoiceAsync(client, admin, Uniq(), issue: false);
+
+        var res = await client.SendAsync(Get($"/api/parent/children/{child}/fees", parent));
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        Assert.False(body.GetProperty("summary").GetProperty("hasInvoice").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("invoice").ValueKind);
+    }
+
+    [Fact]
+    public async Task GetChildFees_LinkedChildNoInvoice_ReturnsEmpty()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+        var admin = await LoginAsAdminAsync(client);
+
+        await SeedCurrentYearAsync(client, admin, $"Year-{Uniq()}");
+        var email = $"parent-{Uniq()}@demoschool.test";
+        var child = await SeedStudentAsync(client, admin, "Nora", "Newt", email);
+        var (parent, _) = await SeedParentForStudentAsync(client, admin, child, email, "Passw0rd!");
+
+        var res = await client.SendAsync(Get($"/api/parent/children/{child}/fees", parent));
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        Assert.False(body.GetProperty("summary").GetProperty("hasInvoice").GetBoolean());
+        Assert.Equal(0m, body.GetProperty("summary").GetProperty("outstanding").GetDecimal());
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("invoice").ValueKind);
+    }
+
+    [Fact]
+    public async Task GetChildFees_ChildOfAnotherParent_Returns404()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+        var admin = await LoginAsAdminAsync(client);
+
+        var emailA = $"parent-{Uniq()}@demoschool.test";
+        var childA = await SeedStudentAsync(client, admin, "Ola", "Owl", emailA);
+        var (parentA, _) = await SeedParentForStudentAsync(client, admin, childA, emailA, "Passw0rd!");
+
+        var emailB = $"parent-{Uniq()}@demoschool.test";
+        var childB = await SeedStudentAsync(client, admin, "Pat", "Puma", emailB);
+        await SeedParentForStudentAsync(client, admin, childB, emailB, "Passw0rd!");
+
+        var res = await client.SendAsync(Get($"/api/parent/children/{childB}/fees", parentA));
+        Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
+    }
+
     // ─── Auth gates ───────────────────────────────────────────────────────────
 
     [Fact]

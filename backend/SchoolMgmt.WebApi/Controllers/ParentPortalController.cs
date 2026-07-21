@@ -32,6 +32,12 @@ public class ParentPortalController(ParentPortalService service) : ControllerBas
         Guid childId, [FromQuery] Guid? academicYearId, CancellationToken ct)
         => Ok(await service.GetChildAttendanceAsync(ParentUserId, childId, academicYearId, ct));
 
+    // GET /api/parent/children/{childId}/fees?academicYearId=
+    [HttpGet("children/{childId:guid}/fees")]
+    public async Task<IActionResult> GetChildFees(
+        Guid childId, [FromQuery] Guid? academicYearId, CancellationToken ct)
+        => Ok(await service.GetChildFeesAsync(ParentUserId, childId, academicYearId, ct));
+
     // GET /api/parent/academic-years
     [HttpGet("academic-years")]
     public async Task<IActionResult> GetAcademicYears(CancellationToken ct)
