@@ -90,6 +90,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: <BookOpen size={18} />,
     roles: ['Teacher'],
   },
+  {
+    label: 'My Children',
+    to: '/parent/grades',
+    icon: <GraduationCap size={18} />,
+    roles: ['Parent'],
+  },
 ]
 
 export function AppShell() {

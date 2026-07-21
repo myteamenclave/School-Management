@@ -68,6 +68,11 @@
 | `ParentAccountDto` | `parentAccounts.ts` | `parentUserId`, `email`, `displayName`, `accountCreatedAt`. |
 | `ParentLoginResultDto` | `parentAccounts.ts` | `parentUserId`, `email`, `displayName`, `accountCreated` (false = existing Parent reused, temp password NOT applied), `linkCreated` (false = link already existed). |
 | `CreateParentLoginRequest` | `parentAccounts.ts` | `temporaryPassword`. |
+| `parentPortalApi` | `parentPortal.ts` | Parent-facing read surface (Parent role). `getChildren()`, `getAcademicYears()`, `getChildGrades(childId, academicYearId?)` (year optional → backend defaults to current). Hits backend `/parent/*`. |
+| `PARENT_KEYS` | `parentPortal.ts` | Query key factory: `{ children(), academicYears(), childGrades(childId, academicYearId) }`. |
+| `ParentChild` | `parentPortal.ts` | `studentId`, `studentName`, `studentCode`, `enrollmentStatus`, `currentGradeLabel`/`currentSectionName` (nullable when not enrolled in the current year). |
+| `ParentAcademicYear` | `parentPortal.ts` | `id`, `name`, `isCurrent` (minimal year list for the parent selector). |
+| `StudentGrade` (parent) | `parentPortal.ts` | Same shape as `gradebook.ts` `StudentGrade`; parent UI renders only subject/term/letter/semester. |
 | `FEE_ASSIGNMENT_KEYS` | `feeAssignments.ts` | TanStack Query key factory: `{ studentAssignment(studentId, academicYearId), studentDiscounts(studentId, academicYearId) }`. |
 | `StudentFeeAssignmentDto` | `feeAssignments.ts` | `id`, `studentId`, `studentName`, `studentCode`, `feeTemplateId`, `templateName`, `academicYearId`, `academicYearName`. |
 | `StudentDiscountAssignmentDto` | `feeAssignments.ts` | `id`, `studentId`, `discountRuleId`, `discountRuleName`, `ruleType`, `value`, `academicYearId`. |
@@ -144,7 +149,7 @@
 
 | Component | Purpose |
 |---|---|
-| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role`. Nav items: Dashboard (all roles), Academic Years, Grades & Sections, Students, Teachers, Subjects, Fee Templates, Fee Invoices, Attendance `/admin/attendance` (Admin-only), Gradebook `/admin/gradebook` (Admin-only), Grade Scale `/admin/grade-scale` (Admin-only), Attendance `/teacher/attendance` (Teacher-only), Gradebook `/teacher/gradebook` (Teacher-only). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
+| `AppShell` | Persistent authenticated shell. Left sidebar: navy `bg-primary`, `SchoolMS` logo, data-driven `NAV_ITEMS` filtered by `user.role`. Nav items: Dashboard (all roles), Academic Years, Grades & Sections, Students, Teachers, Subjects, Fee Templates, Fee Invoices, Attendance `/admin/attendance` (Admin-only), Gradebook `/admin/gradebook` (Admin-only), Grade Scale `/admin/grade-scale` (Admin-only), Attendance `/teacher/attendance` (Teacher-only), Gradebook `/teacher/gradebook` (Teacher-only), My Children `/parent/grades` (Parent-only). Right column: topbar with user display name + logout button; `<Outlet>` for page content. Logout calls `authApi.logout()` + `clearUser()` + `navigate('/login')`. |
 
 ## Pages (`src/pages/`)
 
@@ -208,7 +213,8 @@
 | `GradebookPage` | `teacher/gradebook/GradebookPage.tsx` | Teacher page at `/teacher/gradebook`. Year → Semester (defaults to current) + Grade → Section + Subject `Select`s. Loads roster via `GRADEBOOK_KEYS.subjectRoster`. Table: Code, Name, Midterm/Final/Coursework number `Input`s (0–100), read-only Term (provisional 30/40/30 client preview) + Letter (resolved live from grade-scale bands via `gradeScaleApi.getAll`, mirroring the server), Notes. Save → `gradebookApi.bulkUpsert` → toast + refetch (authoritative Term/Letter). `useBlocker` dirty guard. Server enforces subject-section ownership + archived-year block. |
 | `GradebookViewPage` | `admin/gradebook/GradebookViewPage.tsx` | Admin read-only page at `/admin/gradebook`. Same Year/Semester/Grade/Section/Subject `Select`s. Read-only table of Midterm/Final/Coursework/Term/Letter/Notes; "X of Y graded" summary line. |
 | `GradeScalePage` | `admin/grade-scale/GradeScalePage.tsx` | Admin page at `/admin/grade-scale`. Table of letter bands (Letter/Min/Max) with add/edit (inline `Dialog` form) and delete (confirm `Dialog`). Validates 0–100 and Min ≤ Max client-side. Copy notes edits apply to grades saved after the change. |
-| `ParentRoutes` | `parent/index.tsx` | Stub `<Outlet>` for future `/parent/*` pages. |
+| `ParentRoutes` | `parent/index.tsx` | Nested `<Routes>` for `/parent/*`: `grades` → `ChildGradesPage`; `*` redirects to `grades`. |
+| `ChildGradesPage` | `parent/grades/ChildGradesPage.tsx` | Parent portal grades view at `/parent/grades`. Child switcher (auto-selected + hidden when one child), current-year-default year `Select`. Report-card table grouped by semester (Subject · Term · Letter badge); component scores never rendered. Empty states: no children linked, no grades for child/year, loading, error. Badges non-`Active` enrollment status. |
 
 ## Shared Components (`src/components/`)
 
