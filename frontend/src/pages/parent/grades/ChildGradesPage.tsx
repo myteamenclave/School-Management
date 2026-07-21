@@ -1,15 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { GraduationCap } from 'lucide-react'
-import { Label } from '../../../components/ui/label'
 import { Badge } from '../../../components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../components/ui/select'
 import {
   Table,
   TableBody,
@@ -23,6 +15,8 @@ import {
   PARENT_KEYS,
   type StudentGrade,
 } from '../../../api/parentPortal'
+import { useParentChildYear } from '../useParentChildYear'
+import { ParentChildYearBar } from '../ParentChildYearBar'
 
 const EmptyState = ({ children }: { children: React.ReactNode }) => (
   <div className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
@@ -31,35 +25,18 @@ const EmptyState = ({ children }: { children: React.ReactNode }) => (
 )
 
 export function ChildGradesPage() {
-  const [childId, setChildId] = useState<string | null>(null)
-  const [academicYearId, setAcademicYearId] = useState<string | null>(null)
-
   const {
-    data: children = [],
-    isLoading: childrenLoading,
-    isError: childrenError,
-  } = useQuery({
-    queryKey: PARENT_KEYS.children(),
-    queryFn: parentPortalApi.getChildren,
-  })
-
-  const { data: years = [] } = useQuery({
-    queryKey: PARENT_KEYS.academicYears(),
-    queryFn: parentPortalApi.getAcademicYears,
-  })
-
-  // Auto-select the only child; keep selection valid as the list resolves.
-  useEffect(() => {
-    if (children.length === 0) return
-    setChildId((prev) => (children.some((c) => c.studentId === prev) ? prev : children[0].studentId))
-  }, [children])
-
-  // Default to the current academic year.
-  useEffect(() => {
-    if (years.length === 0) return
-    const current = years.find((y) => y.isCurrent) ?? years[0]
-    setAcademicYearId((prev) => (years.some((y) => y.id === prev) ? prev : current.id))
-  }, [years])
+    children,
+    years,
+    childId,
+    setChildId,
+    academicYearId,
+    setAcademicYearId,
+    childrenLoading,
+    childrenError,
+    selectedChild,
+    selectedYear,
+  } = useParentChildYear()
 
   const gradesEnabled = !!(childId && academicYearId)
 
@@ -73,9 +50,6 @@ export function ChildGradesPage() {
     queryFn: () => parentPortalApi.getChildGrades(childId!, academicYearId!),
     enabled: gradesEnabled,
   })
-
-  const selectedChild = children.find((c) => c.studentId === childId)
-  const selectedYear = years.find((y) => y.id === academicYearId)
 
   // Group grades by semester (report-card layout), semesters ordered by name.
   const semesterGroups = useMemo(() => {
@@ -93,7 +67,7 @@ export function ChildGradesPage() {
       <div className="flex items-center gap-3 mb-6">
         <GraduationCap size={22} className="text-primary" />
         <div>
-          <h1 className="text-xl font-semibold text-foreground">My Children</h1>
+          <h1 className="text-xl font-semibold text-foreground">Grades</h1>
           <p className="text-sm text-muted-foreground">Report card — grades by subject and term</p>
         </div>
       </div>
@@ -108,59 +82,14 @@ export function ChildGradesPage() {
         </EmptyState>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-6">
-            {/* Child switcher — hidden when there's only one child. */}
-            {children.length > 1 && (
-              <div className="flex flex-col gap-1.5">
-                <Label>Child</Label>
-                <Select value={childId ?? ''} onValueChange={setChildId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select child" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {children.map((c) => (
-                      <SelectItem key={c.studentId} value={c.studentId}>
-                        {c.studentName} ({c.studentCode})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-1.5">
-              <Label>Academic Year</Label>
-              <Select value={academicYearId ?? ''} onValueChange={setAcademicYearId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((y) => (
-                    <SelectItem key={y.id} value={y.id}>
-                      {y.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Selected child summary. */}
-          {selectedChild && (
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <span className="text-base font-semibold text-foreground">{selectedChild.studentName}</span>
-              <span className="font-mono text-xs text-muted-foreground">{selectedChild.studentCode}</span>
-              {selectedChild.currentGradeLabel && (
-                <Badge variant="secondary">
-                  {selectedChild.currentGradeLabel}
-                  {selectedChild.currentSectionName ? ` · ${selectedChild.currentSectionName}` : ''}
-                </Badge>
-              )}
-              {selectedChild.enrollmentStatus !== 'Active' && (
-                <Badge variant="outline">{selectedChild.enrollmentStatus}</Badge>
-              )}
-            </div>
-          )}
+          <ParentChildYearBar
+            children={children}
+            years={years}
+            childId={childId}
+            academicYearId={academicYearId}
+            onChildChange={setChildId}
+            onYearChange={setAcademicYearId}
+          />
 
           {gradesLoading ? (
             <EmptyState>Loading grades…</EmptyState>

@@ -38,3 +38,14 @@ public record AttendanceHistoryEntryDto(
     string Status,
     string? Notes
 );
+
+// Per-year attendance summary for a single student. Rate is (Present + Late) / TotalMarked,
+// expressed 0–100 (one decimal); null when TotalMarked == 0 (no days marked — never divide-by-zero).
+public record StudentAttendanceSummaryDto(
+    int TotalMarked,
+    int PresentCount,
+    int LateCount,
+    int AbsentCount,
+    int ExcusedCount,
+    decimal? AttendanceRate
+);

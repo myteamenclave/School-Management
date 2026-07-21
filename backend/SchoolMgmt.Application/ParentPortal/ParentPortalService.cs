@@ -1,4 +1,5 @@
 using SchoolMgmt.Application.AcademicYears;
+using SchoolMgmt.Application.Attendance;
 using SchoolMgmt.Application.Enrollments;
 using SchoolMgmt.Application.Gradebook;
 using SchoolMgmt.Application.Gradebook.Dtos;
@@ -14,7 +15,8 @@ public class ParentPortalService(
     IStudentParentRepository links,
     IStudentSectionEnrollmentRepository enrollments,
     IAcademicYearRepository years,
-    GradebookService gradebook)
+    GradebookService gradebook,
+    AttendanceService attendance)
 {
     // The caller's linked children, labelled with their current-year grade/section.
     public async Task<List<ParentChildDto>> GetMyChildrenAsync(Guid parentUserId, CancellationToken ct = default)
@@ -61,6 +63,21 @@ public class ParentPortalService(
             ?? throw new NotFoundException("No current academic year is set.");
 
         return await gradebook.GetStudentGradesAsync(childId, yearId, ct);
+    }
+
+    // Attendance (summary + daily log) for one linked child. academicYearId null => current year.
+    public async Task<ParentAttendanceDto> GetChildAttendanceAsync(
+        Guid parentUserId, Guid childId, Guid? academicYearId, CancellationToken ct = default)
+    {
+        await ResolveLinkedChildOrThrow(parentUserId, childId, ct);
+
+        var yearId = academicYearId
+            ?? (await years.GetCurrentAsync(ct))?.Id
+            ?? throw new NotFoundException("No current academic year is set.");
+
+        var summary = await attendance.GetStudentSummaryAsync(childId, yearId, ct);
+        var entries = await attendance.GetStudentHistoryAsync(childId, yearId, ct);
+        return new ParentAttendanceDto(summary, entries);
     }
 
     // Minimal year list for the selector.

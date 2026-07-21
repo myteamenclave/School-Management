@@ -117,4 +117,24 @@ public class AttendanceService(
             r.Notes
         )).ToList();
     }
+
+    public async Task<StudentAttendanceSummaryDto> GetStudentSummaryAsync(
+        Guid studentId, Guid academicYearId, CancellationToken ct = default)
+    {
+        var records = await attendanceRepo.GetByStudentAndYearAsync(studentId, academicYearId, ct);
+
+        var present = records.Count(r => r.Status == AttendanceStatus.Present);
+        var late = records.Count(r => r.Status == AttendanceStatus.Late);
+        var absent = records.Count(r => r.Status == AttendanceStatus.Absent);
+        var excused = records.Count(r => r.Status == AttendanceStatus.Excused);
+        var total = records.Count;
+
+        // Rate = "physically in class" (Present + Late) over all marked days.
+        // Absent AND Excused count against it. Null when nothing is marked (no divide-by-zero).
+        decimal? rate = total == 0
+            ? null
+            : Math.Round((decimal)(present + late) * 100 / total, 1);
+
+        return new StudentAttendanceSummaryDto(total, present, late, absent, excused, rate);
+    }
 }

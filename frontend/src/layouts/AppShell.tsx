@@ -91,9 +91,15 @@ const NAV_ITEMS: NavItem[] = [
     roles: ['Teacher'],
   },
   {
-    label: 'My Children',
+    label: 'Grades',
     to: '/parent/grades',
     icon: <GraduationCap size={18} />,
+    roles: ['Parent'],
+  },
+  {
+    label: 'Attendance',
+    to: '/parent/attendance',
+    icon: <CalendarDays size={18} />,
     roles: ['Parent'],
   },
 ]

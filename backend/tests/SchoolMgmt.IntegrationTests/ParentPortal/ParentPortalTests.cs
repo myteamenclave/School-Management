@@ -32,6 +32,13 @@ public class ParentPortalTests(PostgresContainerFixture fixture)
         return msg;
     }
 
+    private static HttpRequestMessage Put(string url, string cookies, object body)
+    {
+        var msg = new HttpRequestMessage(HttpMethod.Put, url).WithCookies(cookies);
+        msg.Content = JsonContent.Create(body);
+        return msg;
+    }
+
     private static string Uniq() => Guid.NewGuid().ToString("N")[..8];
 
     private static async Task<string> SeedStudentAsync(HttpClient client, string cookies,
@@ -183,6 +190,121 @@ public class ParentPortalTests(PostgresContainerFixture fixture)
         Assert.Equal(JsonValueKind.Array, body.ValueKind);
         Assert.True(body.GetArrayLength() >= 1);
         Assert.Contains(body.EnumerateArray(), y => y.GetProperty("isCurrent").GetBoolean());
+    }
+
+    // ─── Attendance ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetChildAttendance_LinkedChild_ReturnsSummaryAndLog()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+        var admin = await LoginAsAdminAsync(client);
+        var tag = Uniq();
+
+        // Full scaffold: grade → section, current year, subject, teacher, student, enrol, assign.
+        var gradeId = (await (await client.SendAsync(Post("/api/grades", admin,
+            new { name = "Grade-" + tag, displayOrder = 80 })))
+            .Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("id").GetString()!;
+        var sectionId = (await (await client.SendAsync(Post($"/api/grades/{gradeId}/sections", admin, new { name = "A" })))
+            .Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("id").GetString()!;
+        var yearId = await SeedCurrentYearAsync(client, admin, "ATT-" + tag);
+        var subjectId = (await (await client.SendAsync(Post("/api/subjects", admin,
+            new { name = "Math-" + tag, code = "MATH-" + tag })))
+            .Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("id").GetString()!;
+
+        var teacherEmail = $"teacher-{tag}@demoschool.test";
+        var teacherId = (await (await client.SendAsync(Post("/api/teachers", admin, new
+        {
+            email = teacherEmail,
+            password = "Passw0rd!",
+            firstName = "Test",
+            lastName = "Teacher",
+            phone = "555-0200",
+            joiningDate = "2025-09-01",
+        }))).Content.ReadFromJsonAsync<JsonElement>(JsonOptions)).GetProperty("id").GetString()!;
+
+        var email = $"parent-{tag}@demoschool.test";
+        var child = await SeedStudentAsync(client, admin, "Holly", "Hen", email);
+
+        await client.SendAsync(Post($"/api/sections/{sectionId}/enrollments", admin,
+            new { studentId = child, academicYearId = yearId }));
+        await client.SendAsync(Post($"/api/teachers/{teacherId}/assignments", admin,
+            new { subjectId, sectionId, academicYearId = yearId }));
+
+        var (parent, _) = await SeedParentForStudentAsync(client, admin, child, email, "Passw0rd!");
+
+        // Teacher marks three days: Present, Late, Absent (one status per student per date).
+        var teacher = await client.PostAsJsonAsync("/api/auth/login",
+            new { email = teacherEmail, password = "Passw0rd!" });
+        var teacherCookies = CookieTestHelpers.BuildCookieHeader(teacher);
+
+        async Task Mark(string date, string status) =>
+            Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(Put("/api/attendance/bulk", teacherCookies, new
+            {
+                sectionId,
+                academicYearId = yearId,
+                date,
+                entries = new[] { new { studentId = child, status, notes = (string?)null } },
+            }))).StatusCode);
+
+        await Mark("2025-09-01", "Present");
+        await Mark("2025-09-02", "Late");
+        await Mark("2025-09-03", "Absent");
+
+        var res = await client.SendAsync(Get($"/api/parent/children/{child}/attendance", parent));
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        var summary = body.GetProperty("summary");
+        Assert.Equal(3, summary.GetProperty("totalMarked").GetInt32());
+        Assert.Equal(1, summary.GetProperty("presentCount").GetInt32());
+        Assert.Equal(1, summary.GetProperty("lateCount").GetInt32());
+        Assert.Equal(1, summary.GetProperty("absentCount").GetInt32());
+        Assert.Equal(0, summary.GetProperty("excusedCount").GetInt32());
+        // (1 Present + 1 Late) / 3 = 66.7
+        Assert.Equal(66.7m, summary.GetProperty("attendanceRate").GetDecimal());
+        Assert.Equal(3, body.GetProperty("entries").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task GetChildAttendance_ChildOfAnotherParent_Returns404()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+        var admin = await LoginAsAdminAsync(client);
+
+        var emailA = $"parent-{Uniq()}@demoschool.test";
+        var childA = await SeedStudentAsync(client, admin, "Ivy", "Ibis", emailA);
+        var (parentA, _) = await SeedParentForStudentAsync(client, admin, childA, emailA, "Passw0rd!");
+
+        var emailB = $"parent-{Uniq()}@demoschool.test";
+        var childB = await SeedStudentAsync(client, admin, "Jack", "Jay", emailB);
+        await SeedParentForStudentAsync(client, admin, childB, emailB, "Passw0rd!");
+
+        var res = await client.SendAsync(Get($"/api/parent/children/{childB}/attendance", parentA));
+        Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetChildAttendance_LinkedChildNoRecords_ReturnsEmptySummary()
+    {
+        await using var factory = fixture.CreateFactory();
+        using var client = factory.CreateClient();
+        var admin = await LoginAsAdminAsync(client);
+
+        await SeedCurrentYearAsync(client, admin, $"Year-{Uniq()}");
+        var email = $"parent-{Uniq()}@demoschool.test";
+        var child = await SeedStudentAsync(client, admin, "Kim", "Koala", email);
+        var (parent, _) = await SeedParentForStudentAsync(client, admin, child, email, "Passw0rd!");
+
+        var res = await client.SendAsync(Get($"/api/parent/children/{child}/attendance", parent));
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        Assert.Equal(0, body.GetProperty("summary").GetProperty("totalMarked").GetInt32());
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("summary").GetProperty("attendanceRate").ValueKind);
+        Assert.Equal(0, body.GetProperty("entries").GetArrayLength());
     }
 
     // ─── Auth gates ───────────────────────────────────────────────────────────
