@@ -64,8 +64,8 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
   - [x] Backend
   - [x] Frontend
 - View fee balance / invoices — [idea doc](ideas/17-parent-portal-fees.md) · [spec](../specs/20-implement-parent-portal-fees.md)
-  - [ ] Backend
-  - [ ] Frontend
+  - [x] Backend
+  - [x] Frontend
 - Pay fees online (sandbox payment gateway — Stripe test mode by default)
   - [ ] Backend
   - [ ] Frontend
