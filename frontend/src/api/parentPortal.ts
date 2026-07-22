@@ -54,6 +54,72 @@ export interface ParentAttendance {
   entries: AttendanceHistoryEntry[]
 }
 
+export interface FeeInvoiceLineItem {
+  id: string
+  name: string
+  originalAmount: number
+  discountAmount: number
+  finalAmount: number
+  displayOrder: number
+}
+
+export interface FeeInvoiceInstallment {
+  id: string
+  name: string
+  percentage: number
+  dueDate: string | null // "yyyy-MM-dd"
+  amount: number
+  status: string // stored status ("Pending"); overdue comes from the summary
+  displayOrder: number
+}
+
+// Same shape the admin FeeInvoiceDto uses (spec 13), read-only for the parent.
+export interface FeeInvoice {
+  id: string
+  invoiceCode: string
+  studentId: string
+  studentName: string
+  studentCode: string
+  academicYearId: string
+  academicYearName: string
+  feeTemplateId: string
+  templateName: string
+  totalAmount: number
+  status: string
+  issuedAt: string | null
+  cancelledAt: string | null
+  createdAt: string
+  updatedAt: string | null
+  lineItems: FeeInvoiceLineItem[]
+  installments: FeeInvoiceInstallment[]
+}
+
+// Server-computed balance rollup. Overdue is a set of installment ids so the UI
+// never recomputes the money rule (spec 20).
+export interface StudentFeeSummary {
+  hasInvoice: boolean
+  totalBilled: number
+  totalPaid: number
+  outstanding: number
+  nextDueDate: string | null
+  nextDueAmount: number | null
+  overdueAmount: number
+  overdueCount: number
+  overdueInstallmentIds: string[]
+}
+
+export interface StudentFeeOverview {
+  summary: StudentFeeSummary
+  invoice: FeeInvoice | null
+}
+
+// Returned when a payment is initiated — drives the Stripe Elements card form inline.
+export interface InitiatePaymentResult {
+  paymentId: string
+  clientSecret: string
+  publishableKey: string
+}
+
 export const PARENT_KEYS = {
   children: () => ['parent', 'children'] as const,
   academicYears: () => ['parent', 'academic-years'] as const,
@@ -61,6 +127,8 @@ export const PARENT_KEYS = {
     ['parent', 'grades', childId, academicYearId] as const,
   childAttendance: (childId: string, academicYearId: string) =>
     ['parent', 'attendance', childId, academicYearId] as const,
+  childFees: (childId: string, academicYearId: string) =>
+    ['parent', 'fees', childId, academicYearId] as const,
 }
 
 export const parentPortalApi = {
@@ -83,4 +151,21 @@ export const parentPortalApi = {
         params: academicYearId ? { academicYearId } : undefined,
       })
       .then((r) => r.data),
+
+  getChildFees: (childId: string, academicYearId?: string) =>
+    api
+      .get<StudentFeeOverview>(`/parent/children/${childId}/fees`, {
+        params: academicYearId ? { academicYearId } : undefined,
+      })
+      .then((r) => r.data),
+
+  // POST — starts an online payment for one installment (first parent write path).
+  payInstallment: (childId: string, installmentId: string) =>
+    api
+      .post<InitiatePaymentResult>(`/parent/children/${childId}/installments/${installmentId}/pay`)
+      .then((r) => r.data),
+
+  // POST — return-path reconcile after Stripe.js resolves (webhook stays authoritative).
+  confirmPayment: (childId: string, paymentId: string) =>
+    api.post<void>(`/parent/children/${childId}/payments/${paymentId}/confirm`).then(() => undefined),
 }

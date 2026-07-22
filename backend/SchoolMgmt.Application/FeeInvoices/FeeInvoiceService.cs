@@ -5,6 +5,7 @@ using SchoolMgmt.Application.FeeInvoices.Dtos;
 using SchoolMgmt.Application.FeeTemplates;
 using SchoolMgmt.Application.Grades;
 using SchoolMgmt.Application.Interfaces;
+using SchoolMgmt.Application.Payments;
 using SchoolMgmt.Application.Students;
 using SchoolMgmt.Application.Students.Dtos;
 using SchoolMgmt.Domain.Common;
@@ -24,6 +25,7 @@ public class FeeInvoiceService(
     IGradeRepository gradeRepo,
     IStudentRepository studentRepo,
     IStudentSectionEnrollmentRepository enrollmentRepo,
+    IPaymentRepository paymentRepo,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     IOptions<InvoiceOptions> options)
@@ -315,6 +317,53 @@ public class FeeInvoiceService(
         return ToDetailDto(invoice);
     }
 
+    // Server-owned balance rollup for one student+year: Billed/Paid/Outstanding/Next-Due plus
+    // on-the-fly overdue (Status is never mutated). The single authoritative money rule — the
+    // parent portal (and future pay-online/dashboard) consume this, never recompute it (spec 20).
+    public async Task<StudentFeeOverviewDto> GetStudentFeeOverviewAsync(
+        Guid studentId, Guid academicYearId, CancellationToken ct = default)
+    {
+        var invoice = await invoiceRepo.GetIssuedForStudentAndYearWithDetailsAsync(
+            studentId, academicYearId, ct);
+
+        if (invoice is null)
+            return new StudentFeeOverviewDto(
+                new StudentFeeSummaryDto(false, 0m, 0m, 0m, null, null, 0m, 0, []),
+                null);
+
+        var today = DateOnly.FromDateTime(dateTimeProvider.UtcNow.UtcDateTime);
+
+        // "Unpaid" = remaining > 0; robust to future partial payments.
+        static decimal Remaining(FeeInvoiceInstallment i) => i.Amount - (i.AmountPaid ?? 0m);
+
+        var totalBilled = invoice.TotalAmount;
+        var totalPaid = invoice.Installments.Sum(i => i.AmountPaid ?? 0m);
+
+        var overdue = invoice.Installments
+            .Where(i => Remaining(i) > 0m && i.DueDate.HasValue && i.DueDate.Value < today)
+            .ToList();
+
+        // Next due = earliest unpaid installment by DueDate (nulls last). Surfaces an overdue
+        // installment first if one exists; null when everything is paid / has no due date.
+        var nextDue = invoice.Installments
+            .Where(i => Remaining(i) > 0m && i.DueDate.HasValue)
+            .OrderBy(i => i.DueDate!.Value)
+            .FirstOrDefault();
+
+        var summary = new StudentFeeSummaryDto(
+            HasInvoice: true,
+            TotalBilled: totalBilled,
+            TotalPaid: totalPaid,
+            Outstanding: totalBilled - totalPaid,
+            NextDueDate: nextDue?.DueDate,
+            NextDueAmount: nextDue is null ? null : Remaining(nextDue),
+            OverdueAmount: overdue.Sum(Remaining),
+            OverdueCount: overdue.Count,
+            OverdueInstallmentIds: overdue.Select(i => i.Id).ToList());
+
+        return new StudentFeeOverviewDto(summary, ToDetailDto(invoice));
+    }
+
     public async Task<FeeInvoiceDto> IssueInvoiceAsync(Guid id, CancellationToken ct = default)
     {
         var invoice = await invoiceRepo.GetByIdWithDetailsAsync(id, ct)
@@ -380,6 +429,10 @@ public class FeeInvoiceService(
 
         if (invoice.Status == InvoiceStatus.Cancelled)
             throw new DomainException("Invoice is already cancelled.");
+
+        // No refunds in this build — an invoice that has collected money cannot be voided.
+        if (await paymentRepo.AnySucceededForInvoiceAsync(invoice.Id, ct))
+            throw new DomainException("Cannot cancel an invoice that has received payments.");
 
         invoice.Status = InvoiceStatus.Cancelled;
         invoice.CancelledAt = dateTimeProvider.UtcNow.UtcDateTime;

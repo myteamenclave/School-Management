@@ -102,6 +102,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: <CalendarDays size={18} />,
     roles: ['Parent'],
   },
+  {
+    label: 'Fees',
+    to: '/parent/fees',
+    icon: <Receipt size={18} />,
+    roles: ['Parent'],
+  },
 ]
 
 export function AppShell() {
