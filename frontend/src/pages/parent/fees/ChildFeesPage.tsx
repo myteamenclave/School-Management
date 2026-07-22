@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Receipt, AlertTriangle } from 'lucide-react'
 import {
   Table,
@@ -13,6 +13,8 @@ import {
 import { parentPortalApi, PARENT_KEYS } from '../../../api/parentPortal'
 import { useParentChildYear } from '../useParentChildYear'
 import { ParentChildYearBar } from '../ParentChildYearBar'
+import { Button } from '../../../components/ui/button'
+import { PayInstallmentModal } from './PayInstallmentModal'
 
 // Matches the admin fee pages (spec 13) — one currency convention across the app.
 const currencyFmt = new Intl.NumberFormat('en-PH', {
@@ -54,6 +56,9 @@ export function ChildFeesPage() {
     selectedChild,
     selectedYear,
   } = useParentChildYear()
+
+  const queryClient = useQueryClient()
+  const [payTarget, setPayTarget] = useState<{ id: string; name: string; amount: number } | null>(null)
 
   const enabled = !!(childId && academicYearId)
 
@@ -161,11 +166,13 @@ export function ChildFeesPage() {
                         <TableHead className="w-40">Due Date</TableHead>
                         <TableHead className="w-32 text-right">Amount</TableHead>
                         <TableHead className="w-28">Status</TableHead>
+                        <TableHead className="w-24 text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {installments.map((inst) => {
                         const isOverdue = overdueIds.has(inst.id)
+                        const isPaid = inst.status === 'Paid'
                         return (
                           <TableRow key={inst.id}>
                             <TableCell className="text-sm">{inst.name}</TableCell>
@@ -180,7 +187,7 @@ export function ChildFeesPage() {
                                 <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
                                   Overdue
                                 </span>
-                              ) : inst.status === 'Paid' ? (
+                              ) : isPaid ? (
                                 <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
                                   Paid
                                 </span>
@@ -188,6 +195,20 @@ export function ChildFeesPage() {
                                 <span className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
                                   Pending
                                 </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {!isPaid && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8"
+                                  onClick={() =>
+                                    setPayTarget({ id: inst.id, name: inst.name, amount: inst.amount })
+                                  }
+                                >
+                                  Pay
+                                </Button>
                               )}
                             </TableCell>
                           </TableRow>
@@ -243,6 +264,23 @@ export function ChildFeesPage() {
             </>
           )}
         </>
+      )}
+
+      {payTarget && childId && (
+        <PayInstallmentModal
+          open={!!payTarget}
+          childId={childId}
+          installmentId={payTarget.id}
+          installmentName={payTarget.name}
+          amountLabel={currencyFmt.format(payTarget.amount)}
+          onClose={() => setPayTarget(null)}
+          onPaid={() => {
+            setPayTarget(null)
+            if (childId && academicYearId) {
+              queryClient.invalidateQueries({ queryKey: PARENT_KEYS.childFees(childId, academicYearId) })
+            }
+          }}
+        />
       )}
     </div>
   )

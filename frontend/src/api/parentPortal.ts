@@ -113,6 +113,13 @@ export interface StudentFeeOverview {
   invoice: FeeInvoice | null
 }
 
+// Returned when a payment is initiated — drives the Stripe Elements card form inline.
+export interface InitiatePaymentResult {
+  paymentId: string
+  clientSecret: string
+  publishableKey: string
+}
+
 export const PARENT_KEYS = {
   children: () => ['parent', 'children'] as const,
   academicYears: () => ['parent', 'academic-years'] as const,
@@ -151,4 +158,14 @@ export const parentPortalApi = {
         params: academicYearId ? { academicYearId } : undefined,
       })
       .then((r) => r.data),
+
+  // POST — starts an online payment for one installment (first parent write path).
+  payInstallment: (childId: string, installmentId: string) =>
+    api
+      .post<InitiatePaymentResult>(`/parent/children/${childId}/installments/${installmentId}/pay`)
+      .then((r) => r.data),
+
+  // POST — return-path reconcile after Stripe.js resolves (webhook stays authoritative).
+  confirmPayment: (childId: string, paymentId: string) =>
+    api.post<void>(`/parent/children/${childId}/payments/${paymentId}/confirm`).then(() => undefined),
 }
