@@ -5,6 +5,7 @@ using SchoolMgmt.Application.FeeInvoices.Dtos;
 using SchoolMgmt.Application.FeeTemplates;
 using SchoolMgmt.Application.Grades;
 using SchoolMgmt.Application.Interfaces;
+using SchoolMgmt.Application.Payments;
 using SchoolMgmt.Application.Students;
 using SchoolMgmt.Application.Students.Dtos;
 using SchoolMgmt.Domain.Common;
@@ -24,6 +25,7 @@ public class FeeInvoiceService(
     IGradeRepository gradeRepo,
     IStudentRepository studentRepo,
     IStudentSectionEnrollmentRepository enrollmentRepo,
+    IPaymentRepository paymentRepo,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     IOptions<InvoiceOptions> options)
@@ -427,6 +429,10 @@ public class FeeInvoiceService(
 
         if (invoice.Status == InvoiceStatus.Cancelled)
             throw new DomainException("Invoice is already cancelled.");
+
+        // No refunds in this build — an invoice that has collected money cannot be voided.
+        if (await paymentRepo.AnySucceededForInvoiceAsync(invoice.Id, ct))
+            throw new DomainException("Cannot cancel an invoice that has received payments.");
 
         invoice.Status = InvoiceStatus.Cancelled;
         invoice.CancelledAt = dateTimeProvider.UtcNow.UtcDateTime;

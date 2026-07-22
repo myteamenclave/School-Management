@@ -37,6 +37,12 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE}
       Jwt__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES}
       Jwt__RefreshTokenDays: ${JWT_REFRESH_TOKEN_DAYS}
+      # Stripe test-mode keys (pay-online, spec 21). Blank ⇒ the pay endpoints 500 on use.
+      # SecretKey + PublishableKey are enough to pay via the return path; WebhookSigningSecret
+      # is only needed for the /api/webhooks/stripe callback.
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY}
+      Stripe__PublishableKey: ${STRIPE_PUBLISHABLE_KEY}
+      Stripe__WebhookSigningSecret: ${STRIPE_WEBHOOK_SIGNING_SECRET}
     # api should only start once the migrator has successfully run and exited
     depends_on:
       migrator:

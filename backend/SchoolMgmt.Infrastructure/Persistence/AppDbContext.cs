@@ -41,6 +41,7 @@ public class AppDbContext(
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
     public DbSet<SubjectTermGrade> SubjectTermGrades => Set<SubjectTermGrade>();
     public DbSet<GradeScaleBand> GradeScaleBands => Set<GradeScaleBand>();
+    public DbSet<Payment> Payments => Set<Payment>();
 
     private static readonly MethodInfo SetTenantFilterMethod =
         typeof(AppDbContext).GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!;

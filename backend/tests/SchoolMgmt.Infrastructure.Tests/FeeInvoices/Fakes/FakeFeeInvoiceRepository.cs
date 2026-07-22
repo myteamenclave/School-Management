@@ -29,6 +29,15 @@ public class FakeFeeInvoiceRepository : IFeeInvoiceRepository
     public Task<FeeInvoice?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default) =>
         throw new NotSupportedException();
 
+    // Seeded installments (with their FeeInvoice navigation) for the pay-online initiate path.
+    public List<FeeInvoiceInstallment> Installments { get; } = new();
+
+    public void SeedInstallment(FeeInvoiceInstallment installment) => Installments.Add(installment);
+
+    public Task<FeeInvoiceInstallment?> GetInstallmentWithInvoiceAsync(
+        Guid installmentId, CancellationToken ct = default) =>
+        Task.FromResult(Installments.FirstOrDefault(i => i.Id == installmentId));
+
     public Task<(List<FeeInvoice> Items, int TotalCount)> GetPagedAsync(
         InvoiceStatus? status, Guid? gradeId, Guid? academicYearId,
         Guid? studentId, int page, int pageSize, CancellationToken ct = default) =>

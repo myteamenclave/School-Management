@@ -5,9 +5,15 @@ using SchoolMgmt.Domain.Enums;
 
 namespace SchoolMgmt.Infrastructure.Persistence.Repositories;
 
-internal sealed class FeeInvoiceRepository(AppDbContext context)
-    : Repository<FeeInvoice>(context), IFeeInvoiceRepository
+internal sealed class FeeInvoiceRepository : Repository<FeeInvoice>, IFeeInvoiceRepository
 {
+    private readonly AppDbContext _context;
+
+    public FeeInvoiceRepository(AppDbContext context) : base(context)
+    {
+        _context = context;
+    }
+
     public async Task<string> GetNextInvoiceCodeAsync(int year, CancellationToken ct = default)
     {
         var prefix = $"INV-{year}-";
@@ -55,6 +61,12 @@ internal sealed class FeeInvoiceRepository(AppDbContext context)
                 i.StudentId == studentId &&
                 i.AcademicYearId == academicYearId &&
                 i.Status == InvoiceStatus.Issued, ct);
+
+    public Task<FeeInvoiceInstallment?> GetInstallmentWithInvoiceAsync(
+        Guid installmentId, CancellationToken ct = default) =>
+        _context.Set<FeeInvoiceInstallment>()
+            .Include(i => i.FeeInvoice)
+            .FirstOrDefaultAsync(i => i.Id == installmentId, ct);
 
     public async Task<(List<FeeInvoice> Items, int TotalCount)> GetPagedAsync(
         InvoiceStatus? status, Guid? gradeId, Guid? academicYearId,

@@ -20,6 +20,8 @@ using SchoolMgmt.Application.Attendance;
 using SchoolMgmt.Application.Gradebook;
 using SchoolMgmt.Application.Dashboard;
 using SchoolMgmt.Application.ParentAccounts;
+using SchoolMgmt.Application.Payments;
+using SchoolMgmt.Infrastructure.Payments;
 using SchoolMgmt.Infrastructure.Persistence.Repositories;
 
 namespace SchoolMgmt.Infrastructure;
@@ -36,6 +38,7 @@ public static class DependencyInjection
         services.Configure<StudentOptions>(configuration.GetSection(StudentOptions.SectionName));
         services.Configure<TeacherOptions>(configuration.GetSection(TeacherOptions.SectionName));
         services.Configure<InvoiceOptions>(configuration.GetSection(InvoiceOptions.SectionName));
+        services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
 
         services.AddHttpContextAccessor();
         services.AddScoped<ITenantProvider, HttpContextTenantProvider>(); // replaces StaticTenantProvider (specs/01) — see specs/02-implement-auth.md
@@ -61,6 +64,8 @@ public static class DependencyInjection
         services.AddScoped<ISubjectTermGradeRepository, SubjectTermGradeRepository>();
         services.AddScoped<IGradeScaleBandRepository, GradeScaleBandRepository>();
         services.AddScoped<IDashboardRepository, DashboardRepository>();
+        services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<IPaymentGateway, StripePaymentGateway>();
 
         services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();

@@ -42,4 +42,21 @@ public class ParentPortalController(ParentPortalService service) : ControllerBas
     [HttpGet("academic-years")]
     public async Task<IActionResult> GetAcademicYears(CancellationToken ct)
         => Ok(await service.GetAcademicYearsAsync(ct));
+
+    // POST /api/parent/children/{childId}/installments/{installmentId}/pay
+    // First parent write path — starts an online payment (POST per SameSite=Lax CSRF rule).
+    [HttpPost("children/{childId:guid}/installments/{installmentId:guid}/pay")]
+    public async Task<IActionResult> PayInstallment(
+        Guid childId, Guid installmentId, CancellationToken ct)
+        => Ok(await service.PayChildInstallmentAsync(ParentUserId, childId, installmentId, ct));
+
+    // POST /api/parent/children/{childId}/payments/{paymentId}/confirm
+    // Return-path reconcile after Stripe.js resolves (webhook remains authoritative).
+    [HttpPost("children/{childId:guid}/payments/{paymentId:guid}/confirm")]
+    public async Task<IActionResult> ConfirmPayment(
+        Guid childId, Guid paymentId, CancellationToken ct)
+    {
+        await service.ConfirmChildPaymentAsync(ParentUserId, childId, paymentId, ct);
+        return NoContent();
+    }
 }

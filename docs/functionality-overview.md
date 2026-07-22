@@ -66,9 +66,9 @@ Each feature is split into backend (API) and frontend (UI) since they progress i
 - View fee balance / invoices — [idea doc](ideas/17-parent-portal-fees.md) · [spec](../specs/20-implement-parent-portal-fees.md)
   - [x] Backend
   - [x] Frontend
-- Pay fees online (sandbox payment gateway — Stripe test mode by default)
-  - [ ] Backend
-  - [ ] Frontend
+- Pay fees online (sandbox payment gateway — Stripe test mode) — [idea doc](ideas/18-parent-portal-pay-fees-online.md) · [spec](../specs/21-implement-parent-portal-pay-fees-online.md)
+  - [x] Backend
+  - [x] Frontend
 
 ## Teacher
 - Mark daily attendance — [idea doc](ideas/11-attendance-marking.md) · [spec](../specs/14-implement-attendance-marking.md)

@@ -18,8 +18,10 @@ public class StudentFeeOverviewTests
     private static readonly DateOnly Today = new(2026, 1, 15);
 
     // GetStudentFeeOverviewAsync touches only invoiceRepo + dateTimeProvider; the rest is null!.
+    // Positional args mirror the ctor: assignment, discount, invoiceRepo, lineItem, installment,
+    // template, year, grade, student, enrollment, paymentRepo, unitOfWork, dateTimeProvider, options.
     private static FeeInvoiceService BuildService(FakeFeeInvoiceRepository repo) =>
-        new(null!, null!, repo, null!, null!, null!, null!, null!, null!, null!, null!,
+        new(null!, null!, repo, null!, null!, null!, null!, null!, null!, null!, null!, null!,
             new FakeDateTimeProvider(new DateTimeOffset(Today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero)),
             Options.Create(new InvoiceOptions()));
 

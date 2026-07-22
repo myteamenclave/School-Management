@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using SchoolMgmt.IntegrationTests.Fakes;
 using SchoolMgmt.IntegrationTests.TestSupport;
@@ -78,9 +79,12 @@ public class PostgresContainerFixture : IAsyncLifetime
     // the connection string (points at this fixture's container) and the JWT
     // config (a fixed test secret, independent of appsettings.Development.json,
     // since WebApplicationFactory doesn't reliably load Development config).
-    public WebApplicationFactory<Program> CreateFactory() =>
+    public WebApplicationFactory<Program> CreateFactory(
+        Action<IServiceCollection>? configureServices = null) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
+            if (configureServices is not null)
+                builder.ConfigureServices(configureServices);
             // WebApplicationFactory defaults to "Production" if the ambient
             // ASPNETCORE_ENVIRONMENT isn't set — without this, DemoDataSeeder's
             // IsDevelopment() gate would skip seeding and every test that logs
